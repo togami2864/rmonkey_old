@@ -9,7 +9,7 @@ pub struct Lexer<'a> {
 }
 
 impl<'a> Lexer<'a> {
-    fn new(input: &'a str) -> Self {
+    pub fn new(input: &'a str) -> Self {
         let mut l = Self {
             input: input.chars(),
             cur: '\u{0}',
