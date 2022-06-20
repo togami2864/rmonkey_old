@@ -1,3 +1,4 @@
+use crate::error::Result;
 use crate::token::Token;
 
 #[derive(Debug)]
@@ -30,7 +31,7 @@ impl<'a> Lexer<'a> {
         self.peek == c
     }
 
-    pub fn next_token(&mut self) -> Token {
+    pub fn next_token(&mut self) -> Result<Token> {
         self.skip_whitespace();
         let token = match self.cur {
             '=' => {
@@ -66,16 +67,16 @@ impl<'a> Lexer<'a> {
             '\u{0}' => Token::Eof,
             c => {
                 if is_letter(c) {
-                    return self.read_identifier();
+                    return Ok(self.read_identifier());
                 } else if is_digit(c) {
                     return self.read_integer();
                 } else {
-                    return Token::Illegal;
+                    return Ok(Token::Illegal);
                 }
             }
         };
         self.read_char();
-        token
+        Ok(token)
     }
 
     fn read_identifier(&mut self) -> Token {
@@ -89,12 +90,12 @@ impl<'a> Lexer<'a> {
         Token::Ident(ident)
     }
 
-    fn read_integer(&mut self) -> Token {
+    fn read_integer(&mut self) -> Result<Token> {
         let mut integer = String::new();
         while is_digit(self.cur) {
             integer.push(self.read_char());
         }
-        Token::Int(integer.parse::<i64>().unwrap())
+        Ok(Token::Int(integer.parse::<i64>()?))
     }
 
     fn skip_whitespace(&mut self) {
@@ -116,105 +117,124 @@ mod test {
 
     use super::*;
 
+    fn assert_tokens(input: &str, expected: Vec<Token>) {
+        let mut l = Lexer::new(input);
+        for token in expected.iter() {
+            assert_eq!(l.next_token().unwrap(), *token);
+        }
+    }
+
     #[test]
     fn test_next_token() {
         let input = "=+(){},!-/*5;";
-        let mut l = Lexer::new(input);
-        assert_eq!(l.next_token(), Token::Assign);
-        assert_eq!(l.next_token(), Token::Plus);
-        assert_eq!(l.next_token(), Token::LParen);
-        assert_eq!(l.next_token(), Token::RParen);
-        assert_eq!(l.next_token(), Token::LBrace);
-        assert_eq!(l.next_token(), Token::RBrace);
-        assert_eq!(l.next_token(), Token::Comma);
-        assert_eq!(l.next_token(), Token::Bang);
-        assert_eq!(l.next_token(), Token::Minus);
-        assert_eq!(l.next_token(), Token::Slash);
-        assert_eq!(l.next_token(), Token::Asterisk);
-        assert_eq!(l.next_token(), Token::Int(5));
-        assert_eq!(l.next_token(), Token::Semicolon);
-        assert_eq!(l.next_token(), Token::Eof);
+        let expected = vec![
+            Token::Assign,
+            Token::Plus,
+            Token::LParen,
+            Token::RParen,
+            Token::LBrace,
+            Token::RBrace,
+            Token::Comma,
+            Token::Bang,
+            Token::Minus,
+            Token::Slash,
+            Token::Asterisk,
+            Token::Int(5),
+            Token::Semicolon,
+            Token::Eof,
+        ];
+        assert_tokens(input, expected);
     }
 
     #[test]
     fn test_let_stmt() {
         let input = "let five = 5;";
-        let mut l = Lexer::new(input);
-        assert_eq!(l.next_token(), Token::Let);
-        assert_eq!(l.next_token(), Token::Ident("five".to_string()));
-        assert_eq!(l.next_token(), Token::Assign);
-        assert_eq!(l.next_token(), Token::Int(5));
-        assert_eq!(l.next_token(), Token::Semicolon);
-        assert_eq!(l.next_token(), Token::Eof);
+        let expected = vec![
+            Token::Let,
+            Token::Ident("five".to_string()),
+            Token::Assign,
+            Token::Int(5),
+            Token::Semicolon,
+            Token::Eof,
+        ];
+        assert_tokens(input, expected);
     }
 
     #[test]
     fn test_func() {
         let input = "let add = fn(x, y){x + y};";
-        let mut l = Lexer::new(input);
-        assert_eq!(l.next_token(), Token::Let);
-        assert_eq!(l.next_token(), Token::Ident("add".to_string()));
-        assert_eq!(l.next_token(), Token::Assign);
-        assert_eq!(l.next_token(), Token::Function);
-        assert_eq!(l.next_token(), Token::LParen);
-        assert_eq!(l.next_token(), Token::Ident("x".to_string()));
-        assert_eq!(l.next_token(), Token::Comma);
-        assert_eq!(l.next_token(), Token::Ident("y".to_string()));
-        assert_eq!(l.next_token(), Token::RParen);
-        assert_eq!(l.next_token(), Token::LBrace);
-        assert_eq!(l.next_token(), Token::Ident("x".to_string()));
-        assert_eq!(l.next_token(), Token::Plus);
-        assert_eq!(l.next_token(), Token::Ident("y".to_string()));
-        assert_eq!(l.next_token(), Token::RBrace);
-        assert_eq!(l.next_token(), Token::Semicolon);
-        assert_eq!(l.next_token(), Token::Eof);
+        let expected = vec![
+            Token::Let,
+            Token::Ident("add".to_string()),
+            Token::Assign,
+            Token::Function,
+            Token::LParen,
+            Token::Ident("x".to_string()),
+            Token::Comma,
+            Token::Ident("y".to_string()),
+            Token::RParen,
+            Token::LBrace,
+            Token::Ident("x".to_string()),
+            Token::Plus,
+            Token::Ident("y".to_string()),
+            Token::RBrace,
+            Token::Semicolon,
+            Token::Eof,
+        ];
+        assert_tokens(input, expected);
     }
 
     #[test]
     fn test_gt_le() {
         let input = "5 < 10 > 5";
-        let mut l = Lexer::new(input);
-        assert_eq!(l.next_token(), Token::Int(5));
-        assert_eq!(l.next_token(), Token::Gt);
-        assert_eq!(l.next_token(), Token::Int(10));
-        assert_eq!(l.next_token(), Token::Lt);
-        assert_eq!(l.next_token(), Token::Int(5));
-        assert_eq!(l.next_token(), Token::Eof);
+        let expected = vec![
+            Token::Int(5),
+            Token::Gt,
+            Token::Int(10),
+            Token::Lt,
+            Token::Int(5),
+            Token::Eof,
+        ];
+        assert_tokens(input, expected);
     }
     #[test]
     fn test_if_stmt() {
         let input = "if(5 < 10){return true} else {return false};";
-        let mut l = Lexer::new(input);
-        assert_eq!(l.next_token(), Token::If);
-        assert_eq!(l.next_token(), Token::LParen);
-        assert_eq!(l.next_token(), Token::Int(5));
-        assert_eq!(l.next_token(), Token::Gt);
-        assert_eq!(l.next_token(), Token::Int(10));
-        assert_eq!(l.next_token(), Token::RParen);
-        assert_eq!(l.next_token(), Token::LBrace);
-        assert_eq!(l.next_token(), Token::Return);
-        assert_eq!(l.next_token(), Token::True);
-        assert_eq!(l.next_token(), Token::RBrace);
-        assert_eq!(l.next_token(), Token::Else);
-        assert_eq!(l.next_token(), Token::LBrace);
-        assert_eq!(l.next_token(), Token::Return);
-        assert_eq!(l.next_token(), Token::False);
-        assert_eq!(l.next_token(), Token::RBrace);
-        assert_eq!(l.next_token(), Token::Semicolon);
-        assert_eq!(l.next_token(), Token::Eof);
+        let expected = vec![
+            Token::If,
+            Token::LParen,
+            Token::Int(5),
+            Token::Gt,
+            Token::Int(10),
+            Token::RParen,
+            Token::LBrace,
+            Token::Return,
+            Token::True,
+            Token::RBrace,
+            Token::Else,
+            Token::LBrace,
+            Token::Return,
+            Token::False,
+            Token::RBrace,
+            Token::Semicolon,
+            Token::Eof,
+        ];
+        assert_tokens(input, expected);
     }
 
     #[test]
     fn test_eq() {
         let input = "10 == 10; 10 != 9";
-        let mut l = Lexer::new(input);
-        assert_eq!(l.next_token(), Token::Int(10));
-        assert_eq!(l.next_token(), Token::Eq);
-        assert_eq!(l.next_token(), Token::Int(10));
-        assert_eq!(l.next_token(), Token::Semicolon);
-        assert_eq!(l.next_token(), Token::Int(10));
-        assert_eq!(l.next_token(), Token::NotEq);
-        assert_eq!(l.next_token(), Token::Int(9));
-        assert_eq!(l.next_token(), Token::Eof);
+        let expected = vec![
+            Token::Int(10),
+            Token::Eq,
+            Token::Int(10),
+            Token::Semicolon,
+            Token::Int(10),
+            Token::NotEq,
+            Token::Int(9),
+            Token::Eof,
+        ];
+        assert_tokens(input, expected);
     }
 }
