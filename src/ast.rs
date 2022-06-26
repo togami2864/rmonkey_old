@@ -1,7 +1,5 @@
 use std::fmt;
 
-use crate::token::Token;
-
 #[derive(Debug)]
 pub struct Program {
     pub stmts: Vec<Stmt>,
@@ -21,8 +19,10 @@ impl Default for Program {
 
 impl fmt::Display for Program {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        // self.stmts.to_string()
-        unimplemented!()
+        for stmt in self.stmts.iter() {
+            writeln!(f, "{}", stmt)?;
+        }
+        Ok(())
     }
 }
 
@@ -30,11 +30,22 @@ impl fmt::Display for Program {
 pub enum Stmt {
     LetStatement { ident: Expr, value: Expr },
     ReturnStatement { value: Expr },
+    ExpressionStatement { expr: Expr },
 }
 
 impl fmt::Display for Stmt {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unimplemented!()
+        match self {
+            Stmt::LetStatement { ident, value } => {
+                write!(f, "let {} = {}", ident, value)
+            }
+            Stmt::ReturnStatement { value } => {
+                write!(f, "return {}", value)
+            }
+            Stmt::ExpressionStatement { expr } => {
+                write!(f, "{}", expr)
+            }
+        }
     }
 }
 
@@ -45,6 +56,8 @@ pub enum Expr {
 
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        unimplemented!()
+        match self {
+            Expr::Ident(ident) => write!(f, "{}", ident),
+        }
     }
 }
