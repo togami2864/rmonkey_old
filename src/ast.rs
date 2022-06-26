@@ -29,6 +29,7 @@ impl fmt::Display for Program {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Stmt {
     LetStatement { ident: Expr, value: Expr },
+    ReturnStatement { value: Expr },
 }
 
 impl fmt::Display for Stmt {

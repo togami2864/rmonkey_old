@@ -45,6 +45,7 @@ impl<'a> Parser<'a> {
     pub fn parse_stmt(&mut self) -> Result<Stmt> {
         match self.cur_token {
             Token::Let => self.parse_let_stmt(),
+            Token::Return => self.parse_return_stmt(),
             _ => unimplemented!(),
         }
     }
@@ -67,6 +68,15 @@ impl<'a> Parser<'a> {
 
         Ok(Stmt::LetStatement {
             ident: Expr::Ident(ident),
+            value: Expr::Ident("placeholder".to_string()),
+        })
+    }
+
+    fn parse_return_stmt(&mut self) -> Result<Stmt> {
+        while !self.cur_token_is(Token::Semicolon) {
+            self.next_token()?;
+        }
+        Ok(Stmt::ReturnStatement {
             value: Expr::Ident("placeholder".to_string()),
         })
     }
@@ -112,9 +122,17 @@ let foobar = 838383;
                 if let Expr::Ident(ident) = ident {
                     assert_eq!(ident, expected[i]);
                 }
-            } else {
-                unimplemented!()
             };
         }
+    }
+    #[test]
+    fn test_return_stmt() {
+        let input = r#"return 5;
+return 10;
+"#;
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), 2);
     }
 }
