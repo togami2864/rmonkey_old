@@ -52,12 +52,14 @@ impl fmt::Display for Stmt {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
     Ident(String),
+    Int(i64),
 }
 
 impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expr::Ident(ident) => write!(f, "{}", ident),
+            Expr::Int(val) => write!(f, "{}", val),
         }
     }
 }

@@ -2,6 +2,7 @@ use crate::{
     ast::{Expr, Program, Stmt},
     error::{MonkeyError, Result},
     lexer::Lexer,
+    operator::Precedence,
     token::Token,
 };
 
@@ -46,7 +47,7 @@ impl<'a> Parser<'a> {
         match self.cur_token {
             Token::Let => self.parse_let_stmt(),
             Token::Return => self.parse_return_stmt(),
-            _ => unimplemented!(),
+            _ => self.parse_expr_statement(),
         }
     }
 
@@ -79,6 +80,27 @@ impl<'a> Parser<'a> {
         Ok(Stmt::ReturnStatement {
             value: Expr::Ident("placeholder".to_string()),
         })
+    }
+
+    fn parse_expr_statement(&mut self) -> Result<Stmt> {
+        let expr = self.parse_expression(Precedence::Lowest)?;
+        if self.peek_token_is(Token::Semicolon) {
+            self.next_token();
+        }
+        Ok(Stmt::ExpressionStatement { expr })
+    }
+
+    fn parse_expression(&mut self, precedence: Precedence) -> Result<Expr> {
+        let left = self.parse_prefix()?;
+        Ok(left)
+    }
+
+    fn parse_prefix(&mut self) -> Result<Expr> {
+        match self.cur_token.clone() {
+            Token::Ident(ident) => Ok(Expr::Ident(ident)),
+            Token::Int(val) => Ok(Expr::Int(val)),
+            _ => todo!(),
+        }
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -134,5 +156,23 @@ return 10;
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
         assert_eq!(program.stmts.len(), 2);
+    }
+
+    #[test]
+    fn test_ident_expression() {
+        let input = "foobar";
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), 1);
+    }
+
+    #[test]
+    fn test_int_expression() {
+        let input = "5";
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), 1);
     }
 }
