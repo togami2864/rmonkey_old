@@ -2,7 +2,7 @@ use crate::{
     ast::{Expr, Program, Stmt},
     error::{MonkeyError, Result},
     lexer::Lexer,
-    operator::Precedence,
+    operator::{Precedence, Prefix},
     token::Token,
 };
 
@@ -85,22 +85,33 @@ impl<'a> Parser<'a> {
     fn parse_expr_statement(&mut self) -> Result<Stmt> {
         let expr = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token_is(Token::Semicolon) {
-            self.next_token();
+            self.next_token()?;
         }
         Ok(Stmt::ExpressionStatement { expr })
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expr> {
-        let left = self.parse_prefix()?;
+        let left = match self.cur_token.clone() {
+            Token::Ident(ident) => Expr::Ident(ident),
+            Token::Int(val) => Expr::Int(val),
+            Token::Minus | Token::Bang => self.parse_prefix_expression()?,
+            _ => todo!(),
+        };
         Ok(left)
     }
 
-    fn parse_prefix(&mut self) -> Result<Expr> {
-        match self.cur_token.clone() {
-            Token::Ident(ident) => Ok(Expr::Ident(ident)),
-            Token::Int(val) => Ok(Expr::Int(val)),
+    fn parse_prefix_expression(&mut self) -> Result<Expr> {
+        let op = match self.cur_token {
+            Token::Minus => Prefix::Minus,
+            Token::Bang => Prefix::Bang,
             _ => todo!(),
-        }
+        };
+        self.next_token()?;
+        let right = self.parse_expression(Precedence::Prefix)?;
+        Ok(Expr::PrefixExpr {
+            op,
+            right: Box::new(right),
+        })
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -174,5 +185,15 @@ return 10;
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
         assert_eq!(program.stmts.len(), 1);
+    }
+
+    #[test]
+    fn test_prefix_expression() {
+        let input = "-5;
+!5;";
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), 2);
     }
 }

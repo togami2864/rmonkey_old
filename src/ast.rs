@@ -1,5 +1,7 @@
 use std::fmt;
 
+use crate::operator::Prefix;
+
 #[derive(Debug)]
 pub struct Program {
     pub stmts: Vec<Stmt>,
@@ -53,6 +55,7 @@ impl fmt::Display for Stmt {
 pub enum Expr {
     Ident(String),
     Int(i64),
+    PrefixExpr { op: Prefix, right: Box<Expr> },
 }
 
 impl fmt::Display for Expr {
@@ -60,6 +63,7 @@ impl fmt::Display for Expr {
         match self {
             Expr::Ident(ident) => write!(f, "{}", ident),
             Expr::Int(val) => write!(f, "{}", val),
+            Expr::PrefixExpr { op, right } => write!(f, "({}{})", op, right),
         }
     }
 }
