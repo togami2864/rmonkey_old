@@ -2,7 +2,7 @@ use crate::{
     ast::{Expr, Program, Stmt},
     error::{MonkeyError, Result},
     lexer::Lexer,
-    operator::{Precedence, Prefix},
+    operator::{Infix, Precedence, Prefix},
     token::Token,
 };
 
@@ -91,12 +91,17 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expr> {
-        let left = match self.cur_token.clone() {
+        let mut left = match self.cur_token.clone() {
             Token::Ident(ident) => Expr::Ident(ident),
             Token::Int(val) => Expr::Int(val),
             Token::Minus | Token::Bang => self.parse_prefix_expression()?,
             _ => todo!(),
         };
+
+        while !self.cur_token_is(Token::Semicolon) && precedence < self.peek_precedence() {
+            self.next_token()?;
+            left = self.parse_infix_expression(left)?;
+        }
         Ok(left)
     }
 
@@ -111,6 +116,28 @@ impl<'a> Parser<'a> {
         Ok(Expr::PrefixExpr {
             op,
             right: Box::new(right),
+        })
+    }
+
+    fn parse_infix_expression(&mut self, left: Expr) -> Result<Expr> {
+        let op = match self.cur_token {
+            Token::Plus => Infix::Plus,
+            Token::Minus => Infix::Minus,
+            Token::Slash => Infix::Slash,
+            Token::Asterisk => Infix::Asterisk,
+            Token::Eq => Infix::Eq,
+            Token::NotEq => Infix::NotEq,
+            Token::Lt => Infix::Lt,
+            Token::Gt => Infix::Gt,
+            _ => unimplemented!(),
+        };
+        let precedence = self.cur_precedence();
+        self.next_token()?;
+        let right = self.parse_expression(precedence)?;
+        Ok(Expr::InfixExpr {
+            left: Box::new(left),
+            right: Box::new(right),
+            op,
         })
     }
 
@@ -132,6 +159,13 @@ impl<'a> Parser<'a> {
             expected,
             self.peek_token.clone(),
         ))
+    }
+
+    fn peek_precedence(&mut self) -> Precedence {
+        Token::precedence(self.peek_token.clone())
+    }
+    fn cur_precedence(&mut self) -> Precedence {
+        Token::precedence(self.cur_token.clone())
     }
 }
 
@@ -195,5 +229,15 @@ return 10;
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
         assert_eq!(program.stmts.len(), 2);
+    }
+
+    #[test]
+    fn test_infix_expression() {
+        let input = "5 + 5";
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), 1);
+        dbg!(program.stmts);
     }
 }

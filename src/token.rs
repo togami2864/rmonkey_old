@@ -1,3 +1,5 @@
+use crate::operator::{Infix, Precedence};
+
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
     Illegal,
@@ -42,6 +44,20 @@ impl Token {
             "else" => Some(Token::Else),
             "return" => Some(Token::Return),
             _ => None,
+        }
+    }
+
+    pub fn precedence(tok: Token) -> Precedence {
+        match tok {
+            Token::Eq => Precedence::Equals,
+            Token::NotEq => Precedence::Equals,
+            Token::Plus => Precedence::Sum,
+            Token::Minus => Precedence::Sum,
+            Token::Asterisk => Precedence::Product,
+            Token::Slash => Precedence::Product,
+            Token::Lt => Precedence::LessGreater,
+            Token::Gt => Precedence::LessGreater,
+            _ => Precedence::Lowest,
         }
     }
 }

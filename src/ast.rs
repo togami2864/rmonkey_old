@@ -1,6 +1,6 @@
 use std::fmt;
 
-use crate::operator::Prefix;
+use crate::operator::{Infix, Prefix};
 
 #[derive(Debug)]
 pub struct Program {
@@ -55,7 +55,15 @@ impl fmt::Display for Stmt {
 pub enum Expr {
     Ident(String),
     Int(i64),
-    PrefixExpr { op: Prefix, right: Box<Expr> },
+    PrefixExpr {
+        op: Prefix,
+        right: Box<Expr>,
+    },
+    InfixExpr {
+        left: Box<Expr>,
+        right: Box<Expr>,
+        op: Infix,
+    },
 }
 
 impl fmt::Display for Expr {
@@ -64,6 +72,7 @@ impl fmt::Display for Expr {
             Expr::Ident(ident) => write!(f, "{}", ident),
             Expr::Int(val) => write!(f, "{}", val),
             Expr::PrefixExpr { op, right } => write!(f, "({}{})", op, right),
+            Expr::InfixExpr { left, right, op } => write!(f, "({} {} {})", left, op, right),
         }
     }
 }
