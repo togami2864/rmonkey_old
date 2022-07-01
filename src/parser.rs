@@ -233,11 +233,39 @@ return 10;
 
     #[test]
     fn test_infix_expression() {
-        let input = "5 + 5";
+        let input = "5 + 5;
+        5 - 5;
+        5 * 5;
+        5 / 5;
+        5 + 5 * 5;
+        5 * 5 - 5 * 5 + 1;
+        -a * b;
+        !-a;
+        a + b * c + d / e - f;
+        5 > 4 == 3 < 4;
+        5 < 4 != 3 > 4;
+        3 + 4 * 5 == 3 * 1 + 4 * 5;
+        ";
+        let expected = vec![
+            "(5 + 5)",
+            "(5 - 5)",
+            "(5 * 5)",
+            "(5 / 5)",
+            "(5 + (5 * 5))",
+            "(((5 * 5) - (5 * 5)) + 1)",
+            "((-a) * b)",
+            "(!(-a))",
+            "(((a + (b * c)) + (d / e)) - f)",
+            "((5 > 4) == (3 < 4))",
+            "((5 < 4) != (3 > 4))",
+            "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
-        assert_eq!(program.stmts.len(), 1);
-        dbg!(program.stmts);
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
     }
 }
