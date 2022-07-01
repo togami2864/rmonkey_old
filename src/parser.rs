@@ -97,6 +97,7 @@ impl<'a> Parser<'a> {
             Token::True => Expr::Boolean(true),
             Token::False => Expr::Boolean(false),
             Token::Minus | Token::Bang => self.parse_prefix_expression()?,
+            Token::LParen => self.parse_group_expression()?,
             _ => todo!(),
         };
 
@@ -141,6 +142,18 @@ impl<'a> Parser<'a> {
             right: Box::new(right),
             op,
         })
+    }
+
+    fn parse_group_expression(&mut self) -> Result<Expr> {
+        self.next_token()?;
+        let expr = self.parse_expression(Precedence::Lowest)?;
+        if !self.expect_peek(Token::RParen)? {
+            return Err(MonkeyError::UnexpectedToken(
+                Token::RParen,
+                self.peek_token.clone(),
+            ));
+        }
+        Ok(expr)
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -285,6 +298,30 @@ return 10;
             "((3 > 5) == false)",
             "((3 < 5) == true)",
             "(!true)",
+        ];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_group() {
+        let input = "1 + (2 + 3) + 4;
+        (5 + 5) * 2;
+        2 / (5 + 5);
+        -(5 + 5);
+        !(true == true);
+        ";
+        let expected = vec![
+            "((1 + (2 + 3)) + 4)",
+            "((5 + 5) * 2)",
+            "(2 / (5 + 5))",
+            "(-(5 + 5))",
+            "(!(true == true))",
         ];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
