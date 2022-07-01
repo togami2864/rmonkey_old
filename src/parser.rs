@@ -94,6 +94,8 @@ impl<'a> Parser<'a> {
         let mut left = match self.cur_token.clone() {
             Token::Ident(ident) => Expr::Ident(ident),
             Token::Int(val) => Expr::Int(val),
+            Token::True => Expr::Boolean(true),
+            Token::False => Expr::Boolean(false),
             Token::Minus | Token::Bang => self.parse_prefix_expression()?,
             _ => todo!(),
         };
@@ -259,6 +261,30 @@ return 10;
             "((5 > 4) == (3 < 4))",
             "((5 < 4) != (3 > 4))",
             "((3 + (4 * 5)) == ((3 * 1) + (4 * 5)))",
+        ];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_boolean() {
+        let input = "true;
+        false;
+        3 > 5 == false;
+        3 < 5 == true;
+        !true
+        ";
+        let expected = vec![
+            "true",
+            "false",
+            "((3 > 5) == false)",
+            "((3 < 5) == true)",
+            "(!true)",
         ];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
