@@ -1,8 +1,8 @@
-use crate::operator::{Infix, Precedence};
+use crate::operator::Precedence;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum Token {
-    Illegal,
+    Illegal(String),
     Eof,
     Ident(String),
     Int(i64),

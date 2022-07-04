@@ -17,18 +17,18 @@ impl<'a> Parser<'a> {
     pub fn new(l: Lexer<'a>) -> Self {
         let mut p = Self {
             l,
-            cur_token: Token::Illegal,
-            peek_token: Token::Illegal,
+            cur_token: Token::Illegal('\u{0}'.to_string()),
+            peek_token: Token::Illegal('\u{0}'.to_string()),
         };
         p.next_token();
         p.next_token();
         p
     }
 
-    pub fn next_token(&mut self) -> Result<&Token> {
+    pub fn next_token(&mut self) -> &Token {
         self.cur_token = self.peek_token.clone();
-        self.peek_token = self.l.next_token()?;
-        Ok(&self.cur_token)
+        self.peek_token = self.l.next_token();
+        &self.cur_token
     }
 
     pub fn parse_program(&mut self) -> Result<Program> {
@@ -38,7 +38,7 @@ impl<'a> Parser<'a> {
                 Ok(stmt) => program.stmts.push(stmt),
                 Err(err) => return Err(MonkeyError::Custom(format!("stmt error: {}", err))),
             }
-            self.next_token()?;
+            self.next_token();
         }
         Ok(program)
     }
@@ -52,7 +52,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_let_stmt(&mut self) -> Result<Stmt> {
-        self.next_token()?;
+        self.next_token();
         let ident = match self.cur_token.clone() {
             Token::Ident(ident) => ident,
             tok => {
@@ -64,7 +64,7 @@ impl<'a> Parser<'a> {
         };
         self.expect_peek(Token::Assign)?;
         while !self.cur_token_is(Token::Semicolon) {
-            self.next_token()?;
+            self.next_token();
         }
 
         Ok(Stmt::LetStatement {
@@ -75,7 +75,7 @@ impl<'a> Parser<'a> {
 
     fn parse_return_stmt(&mut self) -> Result<Stmt> {
         while !self.cur_token_is(Token::Semicolon) {
-            self.next_token()?;
+            self.next_token();
         }
         Ok(Stmt::ReturnStatement {
             value: Expr::Ident("placeholder".to_string()),
@@ -85,22 +85,22 @@ impl<'a> Parser<'a> {
     fn parse_block_stmt(&mut self) -> Result<Stmt> {
         self.expect_peek(Token::LBrace)?;
         let mut stmts: Vec<Stmt> = vec![];
-        self.next_token()?;
+        self.next_token();
         while !self.cur_token_is(Token::RBrace) && !self.cur_token_is(Token::Eof) {
             match self.parse_stmt() {
                 Ok(stmt) => stmts.push(stmt),
                 Err(_) => todo!(),
             }
-            self.next_token()?;
+            self.next_token();
         }
-        self.next_token()?;
+        self.next_token();
         Ok(Stmt::BlockStatement { stmts })
     }
 
     fn parse_expr_statement(&mut self) -> Result<Stmt> {
         let expr = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token_is(Token::Semicolon) {
-            self.next_token()?;
+            self.next_token();
         }
         Ok(Stmt::ExpressionStatement { expr })
     }
@@ -118,7 +118,7 @@ impl<'a> Parser<'a> {
         };
 
         while !self.cur_token_is(Token::Semicolon) && precedence < self.peek_precedence() {
-            self.next_token()?;
+            self.next_token();
             left = self.parse_infix_expression(left)?;
         }
         Ok(left)
@@ -130,7 +130,7 @@ impl<'a> Parser<'a> {
             Token::Bang => Prefix::Bang,
             _ => todo!(),
         };
-        self.next_token()?;
+        self.next_token();
         let right = self.parse_expression(Precedence::Prefix)?;
         Ok(Expr::PrefixExpr {
             op,
@@ -151,7 +151,7 @@ impl<'a> Parser<'a> {
             _ => unimplemented!(),
         };
         let precedence = self.cur_precedence();
-        self.next_token()?;
+        self.next_token();
         let right = self.parse_expression(precedence)?;
         Ok(Expr::InfixExpr {
             left: Box::new(left),
@@ -161,7 +161,7 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_group_expression(&mut self) -> Result<Expr> {
-        self.next_token()?;
+        self.next_token();
         let expr = self.parse_expression(Precedence::Lowest)?;
         if !self.expect_peek(Token::RParen)? {
             return Err(MonkeyError::UnexpectedToken(
@@ -174,7 +174,7 @@ impl<'a> Parser<'a> {
 
     fn parse_if_expression(&mut self) -> Result<Expr> {
         self.expect_peek(Token::LParen)?;
-        self.next_token()?;
+        self.next_token();
         let condition = self.parse_expression(Precedence::Lowest)?;
         self.expect_peek(Token::RParen)?;
 
@@ -201,7 +201,7 @@ impl<'a> Parser<'a> {
     fn expect_peek(&mut self, t: Token) -> Result<bool> {
         let expected = t.clone();
         if self.peek_token_is(t) {
-            self.next_token()?;
+            self.next_token();
             return Ok(true);
         }
         Err(MonkeyError::UnexpectedToken(

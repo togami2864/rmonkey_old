@@ -1,4 +1,3 @@
-use crate::error::Result;
 use crate::token::Token;
 
 #[derive(Debug)]
@@ -31,7 +30,7 @@ impl<'a> Lexer<'a> {
         self.peek == c
     }
 
-    pub fn next_token(&mut self) -> Result<Token> {
+    pub fn next_token(&mut self) -> Token {
         self.skip_whitespace();
         let token = match self.cur {
             '=' => {
@@ -67,16 +66,16 @@ impl<'a> Lexer<'a> {
             '\u{0}' => Token::Eof,
             c => {
                 if is_letter(c) {
-                    return Ok(self.read_identifier());
+                    return self.read_identifier();
                 } else if is_digit(c) {
                     return self.read_integer();
                 } else {
-                    return Ok(Token::Illegal);
+                    return Token::Illegal(c.to_string());
                 }
             }
         };
         self.read_char();
-        Ok(token)
+        token
     }
 
     fn read_identifier(&mut self) -> Token {
@@ -90,12 +89,15 @@ impl<'a> Lexer<'a> {
         Token::Ident(ident)
     }
 
-    fn read_integer(&mut self) -> Result<Token> {
+    fn read_integer(&mut self) -> Token {
         let mut integer = String::new();
         while is_digit(self.cur) {
             integer.push(self.read_char());
         }
-        Ok(Token::Int(integer.parse::<i64>()?))
+        match integer.parse::<i64>() {
+            Ok(int) => Token::Int(int),
+            Err(_) => Token::Illegal(integer),
+        }
     }
 
     fn skip_whitespace(&mut self) {
@@ -120,7 +122,7 @@ mod test {
     fn assert_tokens(input: &str, expected: Vec<Token>) {
         let mut l = Lexer::new(input);
         for token in expected.iter() {
-            assert_eq!(l.next_token().unwrap(), *token);
+            assert_eq!(l.next_token(), *token);
         }
     }
 

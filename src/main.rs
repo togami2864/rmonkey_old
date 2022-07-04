@@ -22,7 +22,7 @@ fn main() {
         if let Some(Ok(line)) = lines.next() {
             let mut l = Lexer::new(line.as_str());
             loop {
-                let tok = l.next_token().unwrap();
+                let tok = l.next_token();
                 if tok == Token::Eof {
                     break;
                 }
