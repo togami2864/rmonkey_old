@@ -36,7 +36,7 @@ impl<'a> Parser<'a> {
         while self.cur_token != Token::Eof {
             match self.parse_stmt() {
                 Ok(stmt) => program.stmts.push(stmt),
-                Err(_) => return Err(MonkeyError::Custom("stmt error".to_string())),
+                Err(err) => return Err(MonkeyError::Custom(format!("stmt error: {}", err))),
             }
             self.next_token()?;
         }
@@ -82,6 +82,21 @@ impl<'a> Parser<'a> {
         })
     }
 
+    fn parse_block_stmt(&mut self) -> Result<Stmt> {
+        self.expect_peek(Token::LBrace)?;
+        let mut stmts: Vec<Stmt> = vec![];
+        self.next_token()?;
+        while !self.cur_token_is(Token::RBrace) && !self.cur_token_is(Token::Eof) {
+            match self.parse_stmt() {
+                Ok(stmt) => stmts.push(stmt),
+                Err(_) => todo!(),
+            }
+            self.next_token()?;
+        }
+        self.next_token()?;
+        Ok(Stmt::BlockStatement { stmts })
+    }
+
     fn parse_expr_statement(&mut self) -> Result<Stmt> {
         let expr = self.parse_expression(Precedence::Lowest)?;
         if self.peek_token_is(Token::Semicolon) {
@@ -98,6 +113,7 @@ impl<'a> Parser<'a> {
             Token::False => Expr::Boolean(false),
             Token::Minus | Token::Bang => self.parse_prefix_expression()?,
             Token::LParen => self.parse_group_expression()?,
+            Token::If => self.parse_if_expression()?,
             _ => todo!(),
         };
 
@@ -154,6 +170,24 @@ impl<'a> Parser<'a> {
             ));
         }
         Ok(expr)
+    }
+
+    fn parse_if_expression(&mut self) -> Result<Expr> {
+        self.expect_peek(Token::LParen)?;
+        self.next_token()?;
+        let condition = self.parse_expression(Precedence::Lowest)?;
+        self.expect_peek(Token::RParen)?;
+
+        let consequence = self.parse_block_stmt()?;
+        let mut alternative = None;
+        if self.cur_token_is(Token::Else) {
+            alternative = Some(Box::new(self.parse_block_stmt()?));
+        }
+        Ok(Expr::IfExpr {
+            condition: Box::new(condition),
+            consequence: Box::new(consequence),
+            alternative,
+        })
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -323,6 +357,20 @@ return 10;
             "(-(5 + 5))",
             "(!(true == true))",
         ];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_if_expression() {
+        let input = r#"if(x < y){x};
+        if(a<b){a}else{b};"#;
+        let expected = vec!["if((x < y)){x}", "if((a < b)){a}else{b}"];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();

@@ -33,6 +33,7 @@ pub enum Stmt {
     LetStatement { ident: Expr, value: Expr },
     ReturnStatement { value: Expr },
     ExpressionStatement { expr: Expr },
+    BlockStatement { stmts: Vec<Stmt> },
 }
 
 impl fmt::Display for Stmt {
@@ -46,6 +47,12 @@ impl fmt::Display for Stmt {
             }
             Stmt::ExpressionStatement { expr } => {
                 write!(f, "{}", expr)
+            }
+            Stmt::BlockStatement { stmts } => {
+                for stmt in stmts.iter() {
+                    write!(f, "{}", stmt)?;
+                }
+                Ok(())
             }
         }
     }
@@ -65,6 +72,11 @@ pub enum Expr {
         right: Box<Expr>,
         op: Infix,
     },
+    IfExpr {
+        condition: Box<Expr>,
+        consequence: Box<Stmt>,
+        alternative: Option<Box<Stmt>>,
+    },
 }
 
 impl fmt::Display for Expr {
@@ -75,6 +87,14 @@ impl fmt::Display for Expr {
             Expr::Boolean(val) => write!(f, "{}", val),
             Expr::PrefixExpr { op, right } => write!(f, "({}{})", op, right),
             Expr::InfixExpr { left, right, op } => write!(f, "({} {} {})", left, op, right),
+            Expr::IfExpr {
+                condition,
+                consequence,
+                alternative,
+            } => match alternative {
+                Some(alt) => write!(f, "if({}){{{}}}else{{{}}}", condition, consequence, alt),
+                None => write!(f, "if({}){{{}}}", condition, consequence),
+            },
         }
     }
 }
