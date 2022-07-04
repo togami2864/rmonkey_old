@@ -114,6 +114,7 @@ impl<'a> Parser<'a> {
             Token::Minus | Token::Bang => self.parse_prefix_expression()?,
             Token::LParen => self.parse_group_expression()?,
             Token::If => self.parse_if_expression()?,
+            Token::Function => self.parse_func()?,
             _ => todo!(),
         };
 
@@ -188,6 +189,35 @@ impl<'a> Parser<'a> {
             consequence: Box::new(consequence),
             alternative,
         })
+    }
+
+    fn parse_func(&mut self) -> Result<Expr> {
+        let parameters = self.parse_func_params()?;
+        let body = self.parse_block_stmt()?;
+        Ok(Expr::FuncLiteral {
+            parameters,
+            body: Box::new(body),
+        })
+    }
+
+    fn parse_func_params(&mut self) -> Result<Vec<Expr>> {
+        let mut params: Vec<Expr> = Vec::new();
+
+        self.expect_peek(Token::LParen)?;
+        self.next_token();
+        if self.cur_token_is(Token::RParen) {
+            return Ok(params);
+        }
+
+        while !self.cur_token_is(Token::RParen) {
+            let param = self.parse_expression(Precedence::Lowest)?;
+            params.push(param);
+            self.next_token();
+            if self.cur_token_is(Token::Comma) {
+                self.next_token();
+            }
+        }
+        Ok(params)
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -371,6 +401,33 @@ return 10;
         let input = r#"if(x < y){x};
         if(a<b){a}else{b};"#;
         let expected = vec!["if((x < y)){x}", "if((a < b)){a}else{b}"];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_function_literal() {
+        let input = r#"fn(x,y){x+y};
+        fn(){1+1};"#;
+        let expected = vec!["fn(x,y){(x + y)}", "fn(){(1 + 1)}"];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_call_expr() {
+        let input = r#"add(1, 2 * 3, 4 + 5);"#;
+        let expected = vec!["add(1, 2 * 3, 4 + 5);"];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();

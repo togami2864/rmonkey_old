@@ -77,6 +77,14 @@ pub enum Expr {
         consequence: Box<Stmt>,
         alternative: Option<Box<Stmt>>,
     },
+    FuncLiteral {
+        parameters: Vec<Expr>,
+        body: Box<Stmt>,
+    },
+    CallExpr {
+        function: Box<Expr>,
+        args: Vec<Expr>,
+    },
 }
 
 impl fmt::Display for Expr {
@@ -95,6 +103,29 @@ impl fmt::Display for Expr {
                 Some(alt) => write!(f, "if({}){{{}}}else{{{}}}", condition, consequence, alt),
                 None => write!(f, "if({}){{{}}}", condition, consequence),
             },
+            Expr::FuncLiteral { parameters, body } => {
+                let params = if parameters.len() == 1 {
+                    format!("{}", parameters[0])
+                } else {
+                    parameters
+                        .iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                };
+                write!(f, "fn({}){{{}}}", params, body)
+            }
+            Expr::CallExpr { function, args } => {
+                let arg = if args.len() == 1 {
+                    format!("{}", args[0])
+                } else {
+                    args.iter()
+                        .map(|p| p.to_string())
+                        .collect::<Vec<_>>()
+                        .join(",")
+                };
+                write!(f, "{}({})", function, arg)
+            }
         }
     }
 }
