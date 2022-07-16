@@ -116,78 +116,76 @@ mod tests {
 
     #[test]
     fn test_integer_ope() {
-        let input = r#"5;
-10;
--5;
--10;
-5 + 5 + 5 + 5 - 10;
-2 * 2 * 2 * 2 * 2;
--50 + 100 + -50;
-5 * 2 + 10;
-5 + 2 * 10;
-50 / 2 * 2 + 10;
-2 * (5 + 10);
-3 * 3 * 3 + 10;
-3 * (3 * 3) + 10;
-(5 + 10 * 2 + 15 / 3) * 2 + -10;
-        "#;
-        let expected = [
-            "5", "10", "-5", "-10", "10", "32", "0", "20", "25", "60", "30", "37", "37", "50",
+        let case = [
+            ("5", "5"),
+            ("10", "10"),
+            ("-5", "-5"),
+            ("-10", "-10"),
+            ("5 + 5 + 5 + 5 - 10", "10"),
+            ("2 * 2 * 2 * 2 * 2", "32"),
+            ("-50 + 100 - 50", "0"),
+            ("5 * 2 + 10", "20"),
+            ("5 + 2 * 10", "25"),
+            ("50 / 2 * 2 + 10", "60"),
+            ("2 * (5 + 10)", "30"),
+            ("3 * 3 * 3 + 10", "37"),
+            ("3 * (3 * 3) + 10", "37"),
+            ("(5 + 10 * 2 + 15 / 3) * 2 + -10", "50"),
         ];
-        let l = Lexer::new(input);
-        let mut p = Parser::new(l);
-        let program = p.parse_program().unwrap();
-        let results = eval(program).unwrap();
-        // for (i, r) in results.iter().enumerate() {
-        //     assert_eq!(r.to_string(), expected[i])
-        // }
+
+        for (input, expected) in case.iter() {
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = eval(program).unwrap();
+            assert_eq!(r.to_string(), *expected)
+        }
     }
 
     #[test]
     fn test_bang_ope() {
-        let input = r#"!true;
-!false;
-!5;
-!!true;
-!!false;
-!!5;
-        "#;
-        let expected = ["false", "true", "false", "true", "false", "true"];
-        let l = Lexer::new(input);
-        let mut p = Parser::new(l);
-        let program = p.parse_program().unwrap();
-        let results = eval(program).unwrap();
-        // for (i, r) in results.iter().enumerate() {
-        //     assert_eq!(r.to_string(), expected[i])
-        // }
+        let case = [
+            ("!false", "true"),
+            ("!5", "false"),
+            ("!!true", "true"),
+            ("!!false", "false"),
+            ("!!5", "true"),
+        ];
+        for (input, expected) in case.iter() {
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = eval(program).unwrap();
+            assert_eq!(r.to_string(), *expected);
+        }
     }
 
     #[test]
     fn test_boolean_expr() {
-        let input = r#"1 < 2;
-1 > 2;
-1 < 1;
-1 > 1;
-1 == 1;
-1 != 1;
-1 == 2;
-1 != 2;
-true == true
-false == false;
-(1 < 2) == true;
-(1 < 2) == false;
-(1 > 2) == true;
-(1 > 2) == false;
-        "#;
-        let expected = [
-            "true", "false", "false", "false", "true", "false", "false", "true", "true", "true",
-            "true", "false", "false", "true",
+        let case = [
+            ("1 < 2", "true"),
+            ("1 > 2", "false"),
+            ("1 < 1", "false"),
+            ("1 > 1", "false"),
+            ("1 == 1", "true"),
+            ("1 != 1", "false"),
+            ("1 == 2", "false"),
+            ("1 != 2", "true"),
+            ("true == true", "true"),
+            ("false == false", "true"),
+            ("(1 < 2) == true", "true"),
+            ("(1 < 2) == false", "false"),
+            ("(1 > 2) == true", "false"),
+            ("(1 > 2) == false", "true"),
         ];
-        let l = Lexer::new(input);
-        let mut p = Parser::new(l);
-        let program = p.parse_program().unwrap();
-        let r = eval(program).unwrap();
-        // assert_eq!(r.to_string(), expected[i])
+
+        for (input, expected) in case {
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = eval(program).unwrap();
+            assert_eq!(r.to_string(), expected)
+        }
     }
 
     #[test]
