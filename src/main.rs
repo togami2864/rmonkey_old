@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use rmonkey::{lexer::Lexer, parser::Parser};
+use rmonkey::{evaluator::eval, lexer::Lexer, parser::Parser};
 
 fn prompt(s: &str) -> Result<()> {
     use std::io::{stdout, Write};
@@ -23,7 +23,7 @@ fn main() {
             let l = Lexer::new(line.as_str());
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            println!("{}", program);
+            eval(program);
         }
     }
 }
