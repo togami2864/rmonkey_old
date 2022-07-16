@@ -23,7 +23,14 @@ fn main() {
             let l = Lexer::new(line.as_str());
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            eval(program);
+            match eval(program) {
+                Ok(objects) => {
+                    for o in objects.iter() {
+                        println!("{}", o);
+                    }
+                }
+                Err(_) => todo!(),
+            }
         }
     }
 }
