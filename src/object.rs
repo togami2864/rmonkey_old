@@ -17,4 +17,12 @@ impl fmt::Display for Object {
     }
 }
 
-impl Object {}
+impl Object {
+    pub fn is_truthy(&mut self) -> bool {
+        match self {
+            Object::Null => false,
+            Object::Boolean(val) => *val,
+            _ => true,
+        }
+    }
+}

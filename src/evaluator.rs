@@ -19,8 +19,16 @@ pub fn eval_stmt(stmt: &ast::Stmt) -> Result<Object> {
         ast::Stmt::LetStatement { ident, value } => todo!(),
         ast::Stmt::ReturnStatement { value } => todo!(),
         ast::Stmt::ExpressionStatement { expr } => eval_expr(expr),
-        ast::Stmt::BlockStatement { stmts } => todo!(),
+        ast::Stmt::BlockStatement { stmts } => eval_block_stmt(stmts),
     }
+}
+
+pub fn eval_block_stmt(stmts: &[ast::Stmt]) -> Result<Object> {
+    let mut result = Object::Null;
+    for s in stmts.iter() {
+        result = eval_stmt(s)?;
+    }
+    Ok(result)
 }
 
 pub fn eval_expr(expr: &ast::Expr) -> Result<Object> {
@@ -41,7 +49,16 @@ pub fn eval_expr(expr: &ast::Expr) -> Result<Object> {
             condition,
             consequence,
             alternative,
-        } => todo!(),
+        } => {
+            if eval_expr(condition)?.is_truthy() {
+                eval_stmt(consequence)
+            } else {
+                match alternative {
+                    Some(alt) => eval_stmt(alt),
+                    None => Ok(Object::Null),
+                }
+            }
+        }
         ast::Expr::FuncLiteral { parameters, body } => todo!(),
         ast::Expr::CallExpr { function, args } => todo!(),
     }
@@ -164,6 +181,20 @@ false == false;
         let results = eval(program).unwrap();
         for (i, r) in results.iter().enumerate() {
             assert_eq!(r.to_string(), expected[i])
+        }
+    }
+
+    #[test]
+    fn test_if_else_expr() {
+        let case = [("if(true){10}", "10"), ("if (false) { 10 }", "null")];
+        for (input, expected) in case.iter() {
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let results = eval(program).unwrap();
+            for r in results.iter() {
+                assert_eq!(r.to_string(), *expected)
+            }
         }
     }
 }
