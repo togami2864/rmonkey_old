@@ -57,6 +57,7 @@ impl Token {
             Token::Slash => Precedence::Product,
             Token::Lt => Precedence::LessGreater,
             Token::Gt => Precedence::LessGreater,
+            Token::LParen => Precedence::Call,
             _ => Precedence::Lowest,
         }
     }

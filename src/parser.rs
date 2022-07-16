@@ -63,22 +63,25 @@ impl<'a> Parser<'a> {
             }
         };
         self.expect_peek(Token::Assign)?;
-        while !self.cur_token_is(Token::Semicolon) {
+        self.next_token();
+        let value = self.parse_expression(Precedence::Lowest)?;
+        if self.peek_token_is(Token::Semicolon) {
             self.next_token();
         }
-
         Ok(Stmt::LetStatement {
             ident: Expr::Ident(ident),
-            value: Expr::Ident("placeholder".to_string()),
+            value,
         })
     }
 
     fn parse_return_stmt(&mut self) -> Result<Stmt> {
-        while !self.cur_token_is(Token::Semicolon) {
+        self.next_token();
+        let return_value = self.parse_expression(Precedence::Lowest)?;
+        if self.peek_token_is(Token::Semicolon) {
             self.next_token();
         }
         Ok(Stmt::ReturnStatement {
-            value: Expr::Ident("placeholder".to_string()),
+            value: return_value,
         })
     }
 
@@ -117,10 +120,12 @@ impl<'a> Parser<'a> {
             Token::Function => self.parse_func()?,
             _ => todo!(),
         };
-
         while !self.cur_token_is(Token::Semicolon) && precedence < self.peek_precedence() {
             self.next_token();
-            left = self.parse_infix_expression(left)?;
+            left = match self.cur_token {
+                Token::LParen => self.parse_call_expression(left)?,
+                _ => self.parse_infix_expression(left)?,
+            }
         }
         Ok(left)
     }
@@ -220,6 +225,33 @@ impl<'a> Parser<'a> {
         Ok(params)
     }
 
+    fn parse_call_expression(&mut self, func: Expr) -> Result<Expr> {
+        let args = self.parse_call_args()?;
+        Ok(Expr::CallExpr {
+            function: Box::new(func),
+            args,
+        })
+    }
+
+    fn parse_call_args(&mut self) -> Result<Vec<Expr>> {
+        let mut args: Vec<Expr> = Vec::new();
+        if self.peek_token_is(Token::RParen) {
+            self.next_token();
+            return Ok(args);
+        }
+        self.next_token();
+        let first_arg = self.parse_expression(Precedence::Lowest)?;
+        args.push(first_arg);
+        while self.peek_token_is(Token::Comma) {
+            self.next_token();
+            self.next_token();
+            let arg = self.parse_expression(Precedence::Lowest)?;
+            args.push(arg);
+        }
+        self.expect_peek(Token::RParen)?;
+        Ok(args)
+    }
+
     fn cur_token_is(&self, t: Token) -> bool {
         self.cur_token == t
     }
@@ -262,13 +294,9 @@ let foobar = 838383;
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
         assert_eq!(program.stmts.len(), 3);
-        let expected = vec!["x", "y", "foobar"];
+        let expected = vec!["let x = 5", "let y = 10", "let foobar = 838383"];
         for (i, stmt) in program.stmts.iter().enumerate() {
-            if let Stmt::LetStatement { ident, .. } = stmt {
-                if let Expr::Ident(ident) = ident {
-                    assert_eq!(ident, expected[i]);
-                }
-            };
+            assert_eq!(stmt.to_string(), expected[i])
         }
     }
     #[test]
@@ -280,6 +308,10 @@ return 10;
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
         assert_eq!(program.stmts.len(), 2);
+        let expected = vec!["return 5", "return 10"];
+        for (i, stmt) in program.stmts.iter().enumerate() {
+            assert_eq!(stmt.to_string(), expected[i])
+        }
     }
 
     #[test]
@@ -427,7 +459,7 @@ return 10;
     #[test]
     fn test_call_expr() {
         let input = r#"add(1, 2 * 3, 4 + 5);"#;
-        let expected = vec!["add(1, 2 * 3, 4 + 5);"];
+        let expected = vec!["add(1,(2 * 3),(4 + 5))"];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
