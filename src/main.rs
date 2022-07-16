@@ -1,6 +1,6 @@
 use std::io::Result;
 
-use rmonkey::{lexer::Lexer, token::Token};
+use rmonkey::{lexer::Lexer, parser::Parser};
 
 fn prompt(s: &str) -> Result<()> {
     use std::io::{stdout, Write};
@@ -20,14 +20,10 @@ fn main() {
     loop {
         prompt("> ").unwrap();
         if let Some(Ok(line)) = lines.next() {
-            let mut l = Lexer::new(line.as_str());
-            loop {
-                let tok = l.next_token();
-                if tok == Token::Eof {
-                    break;
-                }
-                println!("{:?}", tok);
-            }
+            let l = Lexer::new(line.as_str());
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            println!("{}", program);
         }
     }
 }
