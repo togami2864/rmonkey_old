@@ -24,10 +24,8 @@ fn main() {
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
             match eval(program) {
-                Ok(objects) => {
-                    for o in objects.iter() {
-                        println!("{}", o);
-                    }
+                Ok(o) => {
+                    println!("{}", o);
                 }
                 Err(_) => todo!(),
             }
