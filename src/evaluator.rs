@@ -220,4 +220,30 @@ mod tests {
             assert_eq!(r.to_string(), *expected)
         }
     }
+
+    #[test]
+    fn test_error() {
+        let case = [
+            ("5 + true", "type mismatch: INTEGER + BOOLEAN"),
+            ("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
+            ("-true", "unknown operator: -BOOLEAN"),
+            ("true + false", "unknown operator: BOOLEAN + BOOLEAN"),
+            ("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
+            (
+                "if(10 > 1) { true + false; }",
+                "unknown operator: BOOLEAN + BOOLEAN",
+            ),
+            (
+                "if (10 > 1) { if (10 > 1) { return true + false} return 1;}",
+                "unknown operator: BOOLEAN + BOOLEAN",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = eval(program).unwrap();
+            assert_eq!(r.to_string(), *expected)
+        }
+    }
 }

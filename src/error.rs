@@ -7,6 +7,8 @@ pub enum MonkeyError {
     Custom(String),
     UnsupportedNumError,
     UnexpectedToken(Token, Token),
+    TypeMismatch,
+    UnknownOperator,
 }
 
 impl fmt::Display for MonkeyError {
@@ -20,6 +22,8 @@ impl fmt::Display for MonkeyError {
             MonkeyError::UnexpectedToken(expected, actual) => {
                 write!(f, "expected {:?}, but got {:?}", expected, actual)
             }
+            MonkeyError::TypeMismatch => todo!(),
+            MonkeyError::UnknownOperator => todo!(),
         }
     }
 }
