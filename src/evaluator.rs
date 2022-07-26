@@ -1,6 +1,6 @@
 use crate::{
     ast::{self, Expr},
-    error::Result,
+    error::{MonkeyError, Result},
     object::Object,
     operator::{Infix, Prefix},
 };
@@ -81,7 +81,10 @@ pub fn eval_prefix_expr(op: &Prefix, right: Object) -> Result<Object> {
         },
         Prefix::Minus => match right {
             Object::Integer(val) => Ok(Object::Integer(-val)),
-            _ => Ok(Object::Null),
+            _ => Err(MonkeyError::UnknownPrefix(
+                op.clone(),
+                "BOOLEAN".to_string(),
+            )),
         },
     }
 }
@@ -102,9 +105,17 @@ pub fn eval_infix_expr(left: Object, right: Object, op: &Infix) -> Result<Object
         (Object::Boolean(left), Object::Boolean(right)) => match op {
             Infix::Eq => Ok(Object::Boolean(left == right)),
             Infix::NotEq => Ok(Object::Boolean(left != right)),
-            _ => Ok(Object::Null),
+            _ => Err(MonkeyError::UnknownOperator(
+                "BOOLEAN".to_string(),
+                "BOOLEAN".to_string(),
+                op.clone(),
+            )),
         },
-        _ => Ok(Object::Null),
+        (left, right) => Err(MonkeyError::TypeMismatch(
+            left.obj_type(),
+            right.obj_type(),
+            op.clone(),
+        )),
     }
 }
 
@@ -226,7 +237,7 @@ mod tests {
         let case = [
             ("5 + true", "type mismatch: INTEGER + BOOLEAN"),
             ("5 + true; 5;", "type mismatch: INTEGER + BOOLEAN"),
-            ("-true", "unknown operator: -BOOLEAN"),
+            ("-true", "unknown prefix: -BOOLEAN"),
             ("true + false", "unknown operator: BOOLEAN + BOOLEAN"),
             ("5; true + false; 5", "unknown operator: BOOLEAN + BOOLEAN"),
             (
@@ -242,8 +253,8 @@ mod tests {
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).unwrap();
-            assert_eq!(r.to_string(), *expected)
+            let r = eval(program).map_err(|e| e.to_string());
+            assert_eq!(r.unwrap_err(), *expected);
         }
     }
 }

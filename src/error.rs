@@ -1,14 +1,18 @@
 use std::fmt;
 
-use crate::token::Token;
+use crate::{
+    operator::{Infix, Prefix},
+    token::Token,
+};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum MonkeyError {
     Custom(String),
     UnsupportedNumError,
     UnexpectedToken(Token, Token),
-    TypeMismatch,
-    UnknownOperator,
+    TypeMismatch(String, String, Infix),
+    UnknownOperator(String, String, Infix),
+    UnknownPrefix(Prefix, String),
 }
 
 impl fmt::Display for MonkeyError {
@@ -22,8 +26,15 @@ impl fmt::Display for MonkeyError {
             MonkeyError::UnexpectedToken(expected, actual) => {
                 write!(f, "expected {:?}, but got {:?}", expected, actual)
             }
-            MonkeyError::TypeMismatch => todo!(),
-            MonkeyError::UnknownOperator => todo!(),
+            MonkeyError::TypeMismatch(left, right, op) => {
+                write!(f, "type mismatch: {} {} {}", left, op, right)
+            }
+            MonkeyError::UnknownOperator(left, right, op) => {
+                write!(f, "unknown operator: {} {} {}", left, op, right)
+            }
+            MonkeyError::UnknownPrefix(prefix, left) => {
+                write!(f, "unknown prefix: {}{}", prefix, left)
+            }
         }
     }
 }

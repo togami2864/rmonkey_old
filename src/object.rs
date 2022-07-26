@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),
@@ -20,6 +20,14 @@ impl fmt::Display for Object {
 }
 
 impl Object {
+    pub fn obj_type(&self) -> String {
+        match self {
+            Object::Integer(_) => "INTEGER".to_string(),
+            Object::Boolean(_) => "BOOLEAN".to_string(),
+            Object::Null => "NULL".to_string(),
+            Object::ReturnValue(_) => unimplemented!(),
+        }
+    }
     pub fn is_truthy(&mut self) -> bool {
         match self {
             Object::Null => false,
