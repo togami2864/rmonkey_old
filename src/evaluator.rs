@@ -1,121 +1,149 @@
+use std::{cell::RefCell, rc::Rc};
+
 use crate::{
-    ast::{self, Expr},
+    ast::{self},
+    environment::Environment,
     error::{MonkeyError, Result},
     object::Object,
     operator::{Infix, Prefix},
 };
 
-pub fn eval(node: ast::Program) -> Result<Object> {
-    let mut result = Object::Null;
-    for stmt in node.stmts.iter() {
-        result = eval_stmt(stmt)?;
-        if let Object::ReturnValue(_) = result {
-            return Ok(result);
-        }
-    }
-    Ok(result)
+pub struct Evaluator {
+    env: Rc<RefCell<Environment>>,
 }
 
-pub fn eval_stmt(stmt: &ast::Stmt) -> Result<Object> {
-    match stmt {
-        ast::Stmt::LetStatement { ident, value } => todo!(),
-        ast::Stmt::ReturnStatement { value } => {
-            let right = eval_expr(value)?;
-            Ok(Object::ReturnValue(Box::new(right)))
-        }
-        ast::Stmt::ExpressionStatement { expr } => eval_expr(expr),
-        ast::Stmt::BlockStatement { stmts } => eval_block_stmt(stmts),
+impl Default for Evaluator {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
-pub fn eval_block_stmt(stmts: &[ast::Stmt]) -> Result<Object> {
-    let mut result = Object::Null;
-    for s in stmts.iter() {
-        result = eval_stmt(s)?;
-        if let Object::ReturnValue(_) = result {
-            return Ok(result);
+impl Evaluator {
+    pub fn new() -> Self {
+        Evaluator {
+            env: Rc::new(RefCell::new(Environment::new())),
         }
     }
-    Ok(result)
-}
 
-pub fn eval_expr(expr: &ast::Expr) -> Result<Object> {
-    match expr {
-        ast::Expr::Ident(_) => todo!(),
-        ast::Expr::Int(val) => Ok(Object::Integer(*val)),
-        ast::Expr::Boolean(val) => Ok(Object::Boolean(*val)),
-        ast::Expr::PrefixExpr { op, right } => {
-            let right = eval_expr(right)?;
-            eval_prefix_expr(op, right)
-        }
-        ast::Expr::InfixExpr { left, right, op } => {
-            let left = eval_expr(left)?;
-            let right = eval_expr(right)?;
-            eval_infix_expr(left, right, op)
-        }
-        ast::Expr::IfExpr {
-            condition,
-            consequence,
-            alternative,
-        } => {
-            if eval_expr(condition)?.is_truthy() {
-                eval_stmt(consequence)
-            } else {
-                match alternative {
-                    Some(alt) => eval_stmt(alt),
-                    None => Ok(Object::Null),
-                }
+    pub fn eval(&mut self, node: ast::Program) -> Result<Object> {
+        let mut result = Object::Null;
+        for stmt in node.stmts.iter() {
+            result = self.eval_stmt(stmt)?;
+            if let Object::ReturnValue(_) = result {
+                return Ok(result);
             }
         }
-        ast::Expr::FuncLiteral { parameters, body } => todo!(),
-        ast::Expr::CallExpr { function, args } => todo!(),
+        Ok(result)
     }
-}
 
-pub fn eval_prefix_expr(op: &Prefix, right: Object) -> Result<Object> {
-    match op {
-        Prefix::Bang => match right {
-            Object::Boolean(val) => Ok(Object::Boolean(!val)),
-            Object::Null => Ok(Object::Boolean(true)),
-            _ => Ok(Object::Boolean(false)),
-        },
-        Prefix::Minus => match right {
-            Object::Integer(val) => Ok(Object::Integer(-val)),
-            _ => Err(MonkeyError::UnknownPrefix(
-                op.clone(),
-                "BOOLEAN".to_string(),
-            )),
-        },
+    pub fn eval_stmt(&mut self, stmt: &ast::Stmt) -> Result<Object> {
+        match stmt {
+            ast::Stmt::LetStatement { ident, value } => {
+                let val = self.eval_expr(value)?;
+                self.env.borrow_mut().set(ident.to_string(), val);
+                Ok(Object::Null)
+            }
+            ast::Stmt::ReturnStatement { value } => {
+                let right = self.eval_expr(value)?;
+                Ok(Object::ReturnValue(Box::new(right)))
+            }
+            ast::Stmt::ExpressionStatement { expr } => self.eval_expr(expr),
+            ast::Stmt::BlockStatement { stmts } => self.eval_block_stmt(stmts),
+        }
     }
-}
 
-pub fn eval_infix_expr(left: Object, right: Object, op: &Infix) -> Result<Object> {
-    match (left, right) {
-        (Object::Integer(left), Object::Integer(right)) => match op {
-            Infix::Plus => Ok(Object::Integer(left + right)),
-            Infix::Minus => Ok(Object::Integer(left - right)),
-            Infix::Asterisk => Ok(Object::Integer(left * right)),
-            Infix::Slash => Ok(Object::Integer(left / right)),
-            Infix::Gt => Ok(Object::Boolean(left < right)),
-            Infix::Lt => Ok(Object::Boolean(left > right)),
-            Infix::Eq => Ok(Object::Boolean(left == right)),
-            Infix::NotEq => Ok(Object::Boolean(left != right)),
-            _ => Ok(Object::Null),
-        },
-        (Object::Boolean(left), Object::Boolean(right)) => match op {
-            Infix::Eq => Ok(Object::Boolean(left == right)),
-            Infix::NotEq => Ok(Object::Boolean(left != right)),
-            _ => Err(MonkeyError::UnknownOperator(
-                "BOOLEAN".to_string(),
-                "BOOLEAN".to_string(),
+    pub fn eval_block_stmt(&mut self, stmts: &[ast::Stmt]) -> Result<Object> {
+        let mut result = Object::Null;
+        for s in stmts.iter() {
+            result = self.eval_stmt(s)?;
+            if let Object::ReturnValue(_) = result {
+                return Ok(result);
+            }
+        }
+        Ok(result)
+    }
+
+    pub fn eval_expr(&mut self, expr: &ast::Expr) -> Result<Object> {
+        match expr {
+            ast::Expr::Ident(ident) => match self.env.borrow().get(ident.to_string()) {
+                Some(val) => Ok(val.clone()),
+                None => Err(MonkeyError::UncaughtRef(ident.to_string())),
+            },
+            ast::Expr::Int(val) => Ok(Object::Integer(*val)),
+            ast::Expr::Boolean(val) => Ok(Object::Boolean(*val)),
+            ast::Expr::PrefixExpr { op, right } => {
+                let right = self.eval_expr(right)?;
+                self.eval_prefix_expr(op, right)
+            }
+            ast::Expr::InfixExpr { left, right, op } => {
+                let left = self.eval_expr(left)?;
+                let right = self.eval_expr(right)?;
+                self.eval_infix_expr(left, right, op)
+            }
+            ast::Expr::IfExpr {
+                condition,
+                consequence,
+                alternative,
+            } => {
+                if self.eval_expr(condition)?.is_truthy() {
+                    self.eval_stmt(consequence)
+                } else {
+                    match alternative {
+                        Some(alt) => self.eval_stmt(alt),
+                        None => Ok(Object::Null),
+                    }
+                }
+            }
+            ast::Expr::FuncLiteral { parameters, body } => todo!(),
+            ast::Expr::CallExpr { function, args } => todo!(),
+        }
+    }
+
+    pub fn eval_prefix_expr(&mut self, op: &Prefix, right: Object) -> Result<Object> {
+        match op {
+            Prefix::Bang => match right {
+                Object::Boolean(val) => Ok(Object::Boolean(!val)),
+                Object::Null => Ok(Object::Boolean(true)),
+                _ => Ok(Object::Boolean(false)),
+            },
+            Prefix::Minus => match right {
+                Object::Integer(val) => Ok(Object::Integer(-val)),
+                _ => Err(MonkeyError::UnknownPrefix(
+                    op.clone(),
+                    "BOOLEAN".to_string(),
+                )),
+            },
+        }
+    }
+
+    pub fn eval_infix_expr(&mut self, left: Object, right: Object, op: &Infix) -> Result<Object> {
+        match (left, right) {
+            (Object::Integer(left), Object::Integer(right)) => match op {
+                Infix::Plus => Ok(Object::Integer(left + right)),
+                Infix::Minus => Ok(Object::Integer(left - right)),
+                Infix::Asterisk => Ok(Object::Integer(left * right)),
+                Infix::Slash => Ok(Object::Integer(left / right)),
+                Infix::Gt => Ok(Object::Boolean(left < right)),
+                Infix::Lt => Ok(Object::Boolean(left > right)),
+                Infix::Eq => Ok(Object::Boolean(left == right)),
+                Infix::NotEq => Ok(Object::Boolean(left != right)),
+                _ => Ok(Object::Null),
+            },
+            (Object::Boolean(left), Object::Boolean(right)) => match op {
+                Infix::Eq => Ok(Object::Boolean(left == right)),
+                Infix::NotEq => Ok(Object::Boolean(left != right)),
+                _ => Err(MonkeyError::UnknownOperator(
+                    "BOOLEAN".to_string(),
+                    "BOOLEAN".to_string(),
+                    op.clone(),
+                )),
+            },
+            (left, right) => Err(MonkeyError::TypeMismatch(
+                left.obj_type(),
+                right.obj_type(),
                 op.clone(),
             )),
-        },
-        (left, right) => Err(MonkeyError::TypeMismatch(
-            left.obj_type(),
-            right.obj_type(),
-            op.clone(),
-        )),
+        }
     }
 }
 
@@ -123,7 +151,7 @@ pub fn eval_infix_expr(left: Object, right: Object, op: &Infix) -> Result<Object
 mod tests {
     use crate::{lexer::Lexer, parser::Parser};
 
-    use super::eval;
+    use super::Evaluator;
 
     #[test]
     fn test_integer_ope() {
@@ -145,10 +173,11 @@ mod tests {
         ];
 
         for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).unwrap();
+            let r = e.eval(program).unwrap();
             assert_eq!(r.to_string(), *expected)
         }
     }
@@ -163,10 +192,11 @@ mod tests {
             ("!!5", "true"),
         ];
         for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).unwrap();
+            let r = e.eval(program).unwrap();
             assert_eq!(r.to_string(), *expected);
         }
     }
@@ -191,10 +221,11 @@ mod tests {
         ];
 
         for (input, expected) in case {
+            let mut e = Evaluator::new();
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).unwrap();
+            let r = e.eval(program).unwrap();
             assert_eq!(r.to_string(), expected)
         }
     }
@@ -203,10 +234,11 @@ mod tests {
     fn test_if_else_expr() {
         let case = [("if(true){10}", "10"), ("if (false) { 10 }", "null")];
         for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).unwrap();
+            let r = e.eval(program).unwrap();
             assert_eq!(r.to_string(), *expected)
         }
     }
@@ -224,10 +256,11 @@ mod tests {
             ),
         ];
         for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).unwrap();
+            let r = e.eval(program).unwrap();
             assert_eq!(r.to_string(), *expected)
         }
     }
@@ -248,13 +281,32 @@ mod tests {
                 "if (10 > 1) { if (10 > 1) { return true + false} return 1;}",
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
+            ("foobar", "Uncaught ReferenceError: foobar is not defined"),
         ];
         for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
             let l = Lexer::new(input);
             let mut p = Parser::new(l);
             let program = p.parse_program().unwrap();
-            let r = eval(program).map_err(|e| e.to_string());
-            assert_eq!(r.unwrap_err(), *expected);
+            let r = e.eval(program);
+            assert_eq!(r.unwrap_err().to_string(), *expected);
+        }
+    }
+    #[test]
+    fn test_let_statement() {
+        let case = [
+            ("let a = 5; a;", "5"),
+            ("let a = 5 * 5; a;", "25"),
+            ("let a = 5; let b = a; b;", "5"),
+            ("let a = 5; let b = a; let c = a + b + 5; c;", "15"),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = e.eval(program).unwrap();
+            assert_eq!(r.to_string(), *expected)
         }
     }
 }

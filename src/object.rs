@@ -1,6 +1,6 @@
 use std::fmt;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone)]
 pub enum Object {
     Integer(i64),
     Boolean(bool),
@@ -25,7 +25,7 @@ impl Object {
             Object::Integer(_) => "INTEGER".to_string(),
             Object::Boolean(_) => "BOOLEAN".to_string(),
             Object::Null => "NULL".to_string(),
-            Object::ReturnValue(_) => unimplemented!(),
+            Object::ReturnValue(_) => todo!(),
         }
     }
     pub fn is_truthy(&mut self) -> bool {

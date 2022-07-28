@@ -13,6 +13,7 @@ pub enum MonkeyError {
     TypeMismatch(String, String, Infix),
     UnknownOperator(String, String, Infix),
     UnknownPrefix(Prefix, String),
+    UncaughtRef(String),
 }
 
 impl fmt::Display for MonkeyError {
@@ -34,6 +35,9 @@ impl fmt::Display for MonkeyError {
             }
             MonkeyError::UnknownPrefix(prefix, left) => {
                 write!(f, "unknown prefix: {}{}", prefix, left)
+            }
+            MonkeyError::UncaughtRef(ident) => {
+                write!(f, "Uncaught ReferenceError: {} is not defined", ident)
             }
         }
     }

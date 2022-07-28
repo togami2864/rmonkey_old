@@ -154,7 +154,7 @@ impl<'a> Parser<'a> {
             Token::NotEq => Infix::NotEq,
             Token::Lt => Infix::Lt,
             Token::Gt => Infix::Gt,
-            _ => unimplemented!(),
+            _ => return Err(MonkeyError::Custom("not yet".to_string())),
         };
         let precedence = self.cur_precedence();
         self.next_token();
