@@ -1,15 +1,16 @@
 use std::{cell::RefCell, rc::Rc};
 
 use crate::{
-    ast::{self},
+    ast::{self, Expr},
     environment::Environment,
     error::{MonkeyError, Result},
     object::Object,
     operator::{Infix, Prefix},
 };
 
+#[derive(Debug)]
 pub struct Evaluator {
-    env: Rc<RefCell<Environment>>,
+    pub env: Rc<RefCell<Environment>>,
 }
 
 impl Default for Evaluator {
@@ -23,6 +24,20 @@ impl Evaluator {
         Evaluator {
             env: Rc::new(RefCell::new(Environment::new())),
         }
+    }
+
+    pub fn from(env: Environment) -> Self {
+        Evaluator {
+            env: Rc::new(RefCell::new(env)),
+        }
+    }
+
+    pub fn set(&mut self, key: String, val: Object) {
+        self.env.borrow_mut().set(key, val);
+    }
+
+    pub fn get(&self, key: &str) -> Option<Object> {
+        self.env.borrow_mut().get(key.to_string())
     }
 
     pub fn eval(&mut self, node: ast::Program) -> Result<Object> {
@@ -65,8 +80,8 @@ impl Evaluator {
 
     pub fn eval_expr(&mut self, expr: &ast::Expr) -> Result<Object> {
         match expr {
-            ast::Expr::Ident(ident) => match self.env.borrow().get(ident.to_string()) {
-                Some(val) => Ok(val.clone()),
+            ast::Expr::Ident(ident) => match self.env.borrow_mut().get(ident.to_string()) {
+                Some(val) => Ok(val),
                 None => Err(MonkeyError::UncaughtRef(ident.to_string())),
             },
             ast::Expr::Int(val) => Ok(Object::Integer(*val)),
@@ -94,8 +109,16 @@ impl Evaluator {
                     }
                 }
             }
-            ast::Expr::FuncLiteral { parameters, body } => todo!(),
-            ast::Expr::CallExpr { function, args } => todo!(),
+            ast::Expr::FuncLiteral { parameters, body } => Ok(Object::FunctionLiteral {
+                params: parameters.to_vec(),
+                body: *body.clone(),
+                env: Environment::new_enclosed_env(Rc::clone(&self.env)),
+            }),
+            ast::Expr::CallExpr { function, args } => {
+                let func = self.eval_expr(function)?;
+                let args = self.eval_call_expr(args.to_vec())?;
+                self.apply_function(func, args)
+            }
         }
     }
 
@@ -143,6 +166,33 @@ impl Evaluator {
                 right.obj_type(),
                 op.clone(),
             )),
+        }
+    }
+
+    pub fn eval_call_expr(&mut self, params: Vec<Expr>) -> Result<Vec<Object>> {
+        let mut result: Vec<Object> = Vec::new();
+        for p in params.iter() {
+            let evaluated = self.eval_expr(p)?;
+            result.push(evaluated);
+        }
+        Ok(result)
+    }
+
+    pub fn apply_function(&mut self, function: Object, args: Vec<Object>) -> Result<Object> {
+        if let Object::FunctionLiteral { params, body, env } = function {
+            let mut env = Evaluator::from(env);
+            for (ident, arg) in params.iter().zip(args.iter()) {
+                if let ast::Expr::Ident(ident) = ident {
+                    env.set(ident.to_owned(), arg.clone())
+                }
+            }
+            match env.eval_stmt(&body) {
+                Ok(Object::ReturnValue(val)) => Ok(*val),
+                obj => obj,
+                Err(_) => todo!(),
+            }
+        } else {
+            todo!();
         }
     }
 }
@@ -299,6 +349,25 @@ mod tests {
             ("let a = 5 * 5; a;", "25"),
             ("let a = 5; let b = a; b;", "5"),
             ("let a = 5; let b = a; let c = a + b + 5; c;", "15"),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = e.eval(program).unwrap();
+            assert_eq!(r.to_string(), *expected)
+        }
+    }
+    #[test]
+    fn test_function_literal() {
+        let case = [
+            ("let identity = fn(x){ x; }; identity(5);", "5"),
+            ("let identity = fn(x){ return x; }; identity(5);", "5"),
+            ("let double = fn(x) { x * 2; }; double(5);", "10"),
+            ("let add = fn(x, y){ x + y;}; add(5, 5);", "10"),
+            ("let add = fn(x, y){ x + y;}; add(5 + 5, add(5, 5));", "20"),
+            ("fn(x) { x }(5)", "5"),
         ];
         for (input, expected) in case.iter() {
             let mut e = Evaluator::new();
