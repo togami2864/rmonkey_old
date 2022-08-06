@@ -61,6 +61,7 @@ impl fmt::Display for Stmt {
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum Expr {
     Ident(String),
+    String(String),
     Int(i64),
     Boolean(bool),
     PrefixExpr {
@@ -91,6 +92,7 @@ impl fmt::Display for Expr {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Expr::Ident(ident) => write!(f, "{}", ident),
+            Expr::String(val) => write!(f, "{}", val),
             Expr::Int(val) => write!(f, "{}", val),
             Expr::Boolean(val) => write!(f, "{}", val),
             Expr::PrefixExpr { op, right } => write!(f, "({}{})", op, right),

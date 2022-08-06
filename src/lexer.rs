@@ -63,6 +63,7 @@ impl<'a> Lexer<'a> {
             }
             '<' => Token::Gt,
             '>' => Token::Lt,
+            '"' => self.read_string(),
             '\u{0}' => Token::Eof,
             c => {
                 if is_letter(c) {
@@ -98,6 +99,15 @@ impl<'a> Lexer<'a> {
             Ok(int) => Token::Int(int),
             Err(_) => Token::Illegal(integer),
         }
+    }
+
+    fn read_string(&mut self) -> Token {
+        let mut string = String::new();
+        self.read_char();
+        while self.cur != '"' {
+            string.push(self.read_char());
+        }
+        Token::String(string)
     }
 
     fn skip_whitespace(&mut self) {
@@ -237,6 +247,13 @@ mod test {
             Token::Int(9),
             Token::Eof,
         ];
+        assert_tokens(input, expected);
+    }
+
+    #[test]
+    fn test_string() {
+        let input = r#""foobar""#;
+        let expected = vec![Token::String("foobar".to_string())];
         assert_tokens(input, expected);
     }
 }

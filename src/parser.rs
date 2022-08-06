@@ -111,6 +111,7 @@ impl<'a> Parser<'a> {
     fn parse_expression(&mut self, precedence: Precedence) -> Result<Expr> {
         let mut left = match self.cur_token.clone() {
             Token::Ident(ident) => Expr::Ident(ident),
+            Token::String(val) => Expr::String(val),
             Token::Int(val) => Expr::Int(val),
             Token::True => Expr::Boolean(true),
             Token::False => Expr::Boolean(false),
@@ -419,6 +420,19 @@ return 10;
             "(-(5 + 5))",
             "(!(true == true))",
         ];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_string() {
+        let input = r#""foobar""#;
+        let expected = vec![r#"foobar"#];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
