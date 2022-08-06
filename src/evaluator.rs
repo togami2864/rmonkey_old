@@ -150,7 +150,6 @@ impl Evaluator {
                 Infix::Lt => Ok(Object::Boolean(left > right)),
                 Infix::Eq => Ok(Object::Boolean(left == right)),
                 Infix::NotEq => Ok(Object::Boolean(left != right)),
-                _ => Ok(Object::Null),
             },
             (Object::Boolean(left), Object::Boolean(right)) => match op {
                 Infix::Eq => Ok(Object::Boolean(left == right)),
@@ -189,7 +188,6 @@ impl Evaluator {
             match env.eval_stmt(&body) {
                 Ok(Object::ReturnValue(val)) => Ok(*val),
                 obj => obj,
-                Err(_) => todo!(),
             }
         } else {
             todo!();
