@@ -161,6 +161,14 @@ impl Evaluator {
                     op.clone(),
                 )),
             },
+            (Object::String(left), Object::String(right)) => match op {
+                Infix::Plus => Ok(Object::String(format!("{}{}", left, right))),
+                _ => Err(MonkeyError::UnknownOperator(
+                    "STRING".to_string(),
+                    "STRING".to_string(),
+                    op.clone(),
+                )),
+            },
             (left, right) => Err(MonkeyError::TypeMismatch(
                 left.obj_type(),
                 right.obj_type(),
@@ -281,7 +289,10 @@ mod tests {
 
     #[test]
     fn test_string() {
-        let case = [(r#""foobar""#, r#"foobar"#)];
+        let case = [
+            (r#""foobar""#, r#"foobar"#),
+            (r#""Hello" + " " + "World""#, r#"Hello World"#),
+        ];
         for (input, expected) in case.iter() {
             let mut e = Evaluator::new();
             let l = Lexer::new(input);
@@ -344,6 +355,7 @@ mod tests {
                 "unknown operator: BOOLEAN + BOOLEAN",
             ),
             ("foobar", "Uncaught ReferenceError: foobar is not defined"),
+            (r#""Hello" - "World""#, "unknown operator: STRING - STRING"),
         ];
         for (input, expected) in case.iter() {
             let mut e = Evaluator::new();
