@@ -48,6 +48,8 @@ impl<'a> Lexer<'a> {
             ')' => Token::RParen,
             '{' => Token::LBrace,
             '}' => Token::RBrace,
+            '[' => Token::LBracket,
+            ']' => Token::RBracket,
             '+' => Token::Plus,
             '-' => Token::Minus,
             '*' => Token::Asterisk,
@@ -254,6 +256,20 @@ mod test {
     fn test_string() {
         let input = r#""foobar""#;
         let expected = vec![Token::String("foobar".to_string())];
+        assert_tokens(input, expected);
+    }
+
+    #[test]
+    fn test_array() {
+        let input = r#"[1,2];"#;
+        let expected = vec![
+            Token::LBracket,
+            Token::Int(1),
+            Token::Comma,
+            Token::Int(2),
+            Token::RBracket,
+            Token::Semicolon,
+        ];
         assert_tokens(input, expected);
     }
 }

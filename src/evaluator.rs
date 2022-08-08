@@ -145,6 +145,8 @@ impl Evaluator {
                     self.apply_function(func, args)
                 }
             }
+            Expr::ArrayLiteral { elements } => todo!(),
+            Expr::IndexExpr { left, index } => todo!(),
         }
     }
 
@@ -318,6 +320,19 @@ mod tests {
             (r#""foobar""#, r#"foobar"#),
             (r#""Hello" + " " + "World""#, r#"Hello World"#),
         ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            let r = e.eval(program).unwrap();
+            assert_eq!(r.to_string(), *expected)
+        }
+    }
+
+    #[test]
+    fn test_array() {
+        let case = [("[1, 2 * 2, 3 + 3]", "[1, 2 * 2, 3 + 3]")];
         for (input, expected) in case.iter() {
             let mut e = Evaluator::new();
             let l = Lexer::new(input);

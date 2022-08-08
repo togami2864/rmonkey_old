@@ -119,12 +119,14 @@ impl<'a> Parser<'a> {
             Token::LParen => self.parse_group_expression()?,
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_func()?,
+            Token::LBracket => self.parse_array_literal()?,
             _ => todo!(),
         };
         while !self.cur_token_is(Token::Semicolon) && precedence < self.peek_precedence() {
             self.next_token();
             left = match self.cur_token {
                 Token::LParen => self.parse_call_expression(left)?,
+                Token::LBracket => self.parse_index_expression(left)?,
                 _ => self.parse_infix_expression(left)?,
             }
         }
@@ -179,6 +181,16 @@ impl<'a> Parser<'a> {
         Ok(expr)
     }
 
+    fn parse_index_expression(&mut self, left: Expr) -> Result<Expr> {
+        self.next_token();
+        let index = self.parse_expression(Precedence::Lowest)?;
+        self.expect_peek(Token::RBracket)?;
+        Ok(Expr::IndexExpr {
+            left: Box::new(left),
+            index: Box::new(index),
+        })
+    }
+
     fn parse_if_expression(&mut self) -> Result<Expr> {
         self.expect_peek(Token::LParen)?;
         self.next_token();
@@ -227,16 +239,16 @@ impl<'a> Parser<'a> {
     }
 
     fn parse_call_expression(&mut self, func: Expr) -> Result<Expr> {
-        let args = self.parse_call_args()?;
+        let args = self.parse_call_args(Token::RParen)?;
         Ok(Expr::CallExpr {
             function: Box::new(func),
             args,
         })
     }
 
-    fn parse_call_args(&mut self) -> Result<Vec<Expr>> {
+    fn parse_call_args(&mut self, end: Token) -> Result<Vec<Expr>> {
         let mut args: Vec<Expr> = Vec::new();
-        if self.peek_token_is(Token::RParen) {
+        if self.peek_token_is(end.clone()) {
             self.next_token();
             return Ok(args);
         }
@@ -249,8 +261,13 @@ impl<'a> Parser<'a> {
             let arg = self.parse_expression(Precedence::Lowest)?;
             args.push(arg);
         }
-        self.expect_peek(Token::RParen)?;
+        self.expect_peek(end)?;
         Ok(args)
+    }
+
+    pub fn parse_array_literal(&mut self) -> Result<Expr> {
+        let elements = self.parse_call_args(Token::RBracket)?;
+        Ok(Expr::ArrayLiteral { elements })
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -405,6 +422,25 @@ return 10;
         }
     }
 
+    #[test]
+    fn test_array() {
+        let input = "[1, 2 * 2, 3 + 3];
+        a * [1, 2, 3, 4][b * c] * d;
+        add(a * b[2], b[1], 2 * [1, 2][1]);
+        ";
+        let expected = vec![
+            "[1, (2 * 2), (3 + 3)]",
+            "((a * ([1, 2, 3, 4][(b * c)])) * d)",
+            "add((a * (b[2])), (b[1]), (2 * ([1, 2][1])))",
+        ];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
     #[test]
     fn test_group() {
         let input = "1 + (2 + 3) + 4;

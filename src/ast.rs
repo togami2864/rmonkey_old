@@ -86,6 +86,13 @@ pub enum Expr {
         function: Box<Expr>,
         args: Vec<Expr>,
     },
+    ArrayLiteral {
+        elements: Vec<Expr>,
+    },
+    IndexExpr {
+        left: Box<Expr>,
+        index: Box<Expr>,
+    },
 }
 
 impl fmt::Display for Expr {
@@ -124,9 +131,19 @@ impl fmt::Display for Expr {
                     args.iter()
                         .map(|p| p.to_string())
                         .collect::<Vec<_>>()
-                        .join(",")
+                        .join(", ")
                 };
                 write!(f, "{}({})", function, arg)
+            }
+            Expr::ArrayLiteral { elements } => {
+                let elements = elements
+                    .iter()
+                    .map(|e| e.to_string())
+                    .collect::<Vec<String>>();
+                write!(f, "[{}]", elements.join(", "))
+            }
+            Expr::IndexExpr { left, index } => {
+                write!(f, "({}[{}])", left.to_string(), index.to_string())
             }
         }
     }

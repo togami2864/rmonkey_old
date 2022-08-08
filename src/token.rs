@@ -20,6 +20,8 @@ pub enum Token {
     RParen,    // )
     LBrace,    //{
     RBrace,    //}
+    LBracket,  // [
+    RBracket,  // ]
     Bang,      // !
     Eq,        // ==
     NotEq,     // !=
@@ -59,6 +61,7 @@ impl Token {
             Token::Lt => Precedence::LessGreater,
             Token::Gt => Precedence::LessGreater,
             Token::LParen => Precedence::Call,
+            Token::LBracket => Precedence::Index,
             _ => Precedence::Lowest,
         }
     }
