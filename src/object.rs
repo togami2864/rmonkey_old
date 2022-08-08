@@ -18,6 +18,9 @@ pub enum Object {
         env: Environment,
     },
     BuildIn,
+    Array {
+        elements: Vec<Object>,
+    },
 }
 
 impl fmt::Display for Object {
@@ -41,6 +44,17 @@ impl fmt::Display for Object {
                 )
             }
             Object::BuildIn => todo!(),
+            Object::Array { elements } => {
+                write!(
+                    f,
+                    "[{}]",
+                    elements
+                        .iter()
+                        .map(|e| e.to_string())
+                        .collect::<Vec<String>>()
+                        .join(", ")
+                )
+            }
         }
     }
 }
@@ -55,6 +69,7 @@ impl Object {
             Object::ReturnValue(_) => todo!(),
             Object::FunctionLiteral { .. } => "FunctionLiteral".to_string(),
             Object::BuildIn => "BUILDIN".to_string(),
+            Object::Array { .. } => "ARRAY".to_string(),
         }
     }
     pub fn is_truthy(&mut self) -> bool {

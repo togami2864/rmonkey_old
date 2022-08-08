@@ -509,7 +509,7 @@ return 10;
     #[test]
     fn test_call_expr() {
         let input = r#"add(1, 2 * 3, 4 + 5);"#;
-        let expected = vec!["add(1,(2 * 3),(4 + 5))"];
+        let expected = vec!["add(1, (2 * 3), (4 + 5))"];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();

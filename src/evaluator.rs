@@ -145,8 +145,25 @@ impl Evaluator {
                     self.apply_function(func, args)
                 }
             }
-            Expr::ArrayLiteral { elements } => todo!(),
-            Expr::IndexExpr { left, index } => todo!(),
+            Expr::ArrayLiteral { elements } => {
+                let elements = self.eval_call_expr(elements.to_vec())?;
+                Ok(Object::Array { elements })
+            }
+            Expr::IndexExpr { left, index } => {
+                let left = self.eval_expr(left)?;
+                let index = self.eval_expr(index)?;
+                match (left, index) {
+                    (Object::Array { elements }, Object::Integer(index)) => {
+                        match elements.get(index as usize) {
+                            Some(obj) => Ok(obj.clone()),
+                            None => todo!(),
+                        }
+                    }
+                    _ => Err(MonkeyError::Custom(
+                        "index operator not supported".to_string(),
+                    )),
+                }
+            }
         }
     }
 
@@ -332,7 +349,7 @@ mod tests {
 
     #[test]
     fn test_array() {
-        let case = [("[1, 2 * 2, 3 + 3]", "[1, 2 * 2, 3 + 3]")];
+        let case = [("[1, 2 * 2, 3 + 3]", "[1, 4, 6]")];
         for (input, expected) in case.iter() {
             let mut e = Evaluator::new();
             let l = Lexer::new(input);
