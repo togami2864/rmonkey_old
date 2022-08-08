@@ -116,9 +116,34 @@ impl Evaluator {
                 env: Environment::new_enclosed_env(Rc::clone(&self.env)),
             }),
             ast::Expr::CallExpr { function, args } => {
-                let func = self.eval_expr(function)?;
                 let args = self.eval_call_expr(args.to_vec())?;
-                self.apply_function(func, args)
+                if let ast::Expr::Ident(func) = &**function {
+                    if func == "len" && args.len() == 1 {
+                        match &args[0] {
+                            Object::String(val) => {
+                                let val = val.len().try_into().unwrap();
+                                Ok(Object::Integer(val))
+                            }
+                            arg => {
+                                return Err(MonkeyError::Custom(format!(
+                                    "arg to `len` not supported, got {}",
+                                    arg.obj_type()
+                                )))
+                            }
+                        }
+                    } else if func == "len" {
+                        return Err(MonkeyError::Custom(format!(
+                            "wrong number of arguments. got={}, want=1",
+                            args.len()
+                        )));
+                    } else {
+                        let func = self.eval_expr(function)?;
+                        self.apply_function(func, args)
+                    }
+                } else {
+                    let func = self.eval_expr(function)?;
+                    self.apply_function(func, args)
+                }
             }
         }
     }
@@ -401,6 +426,29 @@ mod tests {
             let program = p.parse_program().unwrap();
             let r = e.eval(program).unwrap();
             assert_eq!(r.to_string(), *expected)
+        }
+    }
+    #[test]
+    fn test_buildin_func() {
+        let case = [
+            (r#"len("")"#, "0"),
+            (r#"len("four")"#, "4"),
+            (r#"len("hello world")"#, "11"),
+            (r#"len(1)"#, "arg to `len` not supported, got INTEGER"),
+            (
+                r#"len("one", "two")"#,
+                "wrong number of arguments. got=2, want=1",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            match e.eval(program) {
+                Ok(r) => assert_eq!(r.to_string(), *expected),
+                Err(r) => assert_eq!(r.to_string(), *expected),
+            }
         }
     }
 }
