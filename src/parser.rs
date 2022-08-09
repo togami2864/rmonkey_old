@@ -307,12 +307,19 @@ mod tests {
         let input = r#"let x = 5;
 let y = 10;
 let foobar = 838383;
+let foo = "bar"
 "#;
+        let expected = vec![
+            "let x = 5",
+            "let y = 10",
+            "let foobar = 838383",
+            r#"let foo = "bar""#,
+        ];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
-        assert_eq!(program.stmts.len(), 3);
-        let expected = vec!["let x = 5", "let y = 10", "let foobar = 838383"];
+        assert_eq!(program.stmts.len(), expected.len());
+
         for (i, stmt) in program.stmts.iter().enumerate() {
             assert_eq!(stmt.to_string(), expected[i])
         }
@@ -321,12 +328,13 @@ let foobar = 838383;
     fn test_return_stmt() {
         let input = r#"return 5;
 return 10;
+return "10"
 "#;
+        let expected = vec!["return 5", "return 10", r#"return "10""#];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
-        assert_eq!(program.stmts.len(), 2);
-        let expected = vec!["return 5", "return 10"];
+        assert_eq!(program.stmts.len(), expected.len());
         for (i, stmt) in program.stmts.iter().enumerate() {
             assert_eq!(stmt.to_string(), expected[i])
         }
@@ -334,30 +342,42 @@ return 10;
 
     #[test]
     fn test_ident_expression() {
-        let input = "foobar";
+        let input = r#"let foobar = "foo""#;
+        let expected = vec![r#"let foobar = "foo""#];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
-        assert_eq!(program.stmts.len(), 1);
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, stmt) in program.stmts.iter().enumerate() {
+            assert_eq!(stmt.to_string(), expected[i])
+        }
     }
 
     #[test]
     fn test_int_expression() {
         let input = "5";
+        let expected = vec!["5"];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
-        assert_eq!(program.stmts.len(), 1);
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, stmt) in program.stmts.iter().enumerate() {
+            assert_eq!(stmt.to_string(), expected[i])
+        }
     }
 
     #[test]
     fn test_prefix_expression() {
         let input = "-5;
 !5;";
+        let expected = vec!["(-5)", "(!5)"];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
-        assert_eq!(program.stmts.len(), 2);
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, stmt) in program.stmts.iter().enumerate() {
+            assert_eq!(stmt.to_string(), expected[i])
+        }
     }
 
     #[test]
@@ -468,7 +488,7 @@ return 10;
     #[test]
     fn test_string() {
         let input = r#""foobar""#;
-        let expected = vec![r#"foobar"#];
+        let expected = vec![r#""foobar""#];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();
