@@ -2,6 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     ast::{self, Expr},
+    buildin::lookup,
     environment::Environment,
     error::{MonkeyError, Result},
     object::Object,
@@ -118,27 +119,15 @@ impl Evaluator {
             ast::Expr::CallExpr { function, args } => {
                 let args = self.eval_call_expr(args.to_vec())?;
                 if let ast::Expr::Ident(func) = &**function {
-                    if func == "len" && args.len() == 1 {
-                        match &args[0] {
-                            Object::String(val) => {
-                                let val = val.len().try_into().unwrap();
-                                Ok(Object::Integer(val))
-                            }
-                            arg => {
-                                return Err(MonkeyError::Custom(format!(
-                                    "arg to `len` not supported, got {}",
-                                    arg.obj_type()
-                                )))
-                            }
+                    match lookup(func) {
+                        Some(func) => match func {
+                            Object::BuildIn(f) => f(args),
+                            _ => todo!(),
+                        },
+                        None => {
+                            let func = self.eval_expr(function)?;
+                            self.apply_function(func, args)
                         }
-                    } else if func == "len" {
-                        return Err(MonkeyError::Custom(format!(
-                            "wrong number of arguments. got={}, want=1",
-                            args.len()
-                        )));
-                    } else {
-                        let func = self.eval_expr(function)?;
-                        self.apply_function(func, args)
                     }
                 } else {
                     let func = self.eval_expr(function)?;
@@ -479,7 +468,7 @@ mod tests {
             let program = p.parse_program().unwrap();
             match e.eval(program) {
                 Ok(r) => assert_eq!(r.to_string(), *expected),
-                Err(r) => assert_eq!(r.to_string(), *expected),
+                Err(e) => assert_eq!(e.to_string(), *expected),
             }
         }
     }
