@@ -105,6 +105,7 @@ impl<'a> Lexer<'a> {
 
     fn read_string(&mut self) -> Token {
         let mut string = String::new();
+        // consume "
         self.read_char();
         while self.cur != '"' {
             string.push(self.read_char());
@@ -127,6 +128,7 @@ fn is_digit(c: char) -> bool {
     ('0'..='9').contains(&c)
 }
 
+#[cfg(test)]
 mod test {
 
     use super::*;
@@ -162,12 +164,19 @@ mod test {
 
     #[test]
     fn test_let_stmt() {
-        let input = "let five = 5;";
+        let input = r#"let five = 5;
+        let foo = "bar";
+        "#;
         let expected = vec![
             Token::Let,
             Token::Ident("five".to_string()),
             Token::Assign,
             Token::Int(5),
+            Token::Semicolon,
+            Token::Let,
+            Token::Ident("foo".to_string()),
+            Token::Assign,
+            Token::String("bar".to_string()),
             Token::Semicolon,
             Token::Eof,
         ];
@@ -261,12 +270,23 @@ mod test {
 
     #[test]
     fn test_array() {
-        let input = r#"[1,2];"#;
+        let input = r#"[1,2];
+        [1,2][0];
+        "#;
         let expected = vec![
             Token::LBracket,
             Token::Int(1),
             Token::Comma,
             Token::Int(2),
+            Token::RBracket,
+            Token::Semicolon,
+            Token::LBracket,
+            Token::Int(1),
+            Token::Comma,
+            Token::Int(2),
+            Token::RBracket,
+            Token::LBracket,
+            Token::Int(0),
             Token::RBracket,
             Token::Semicolon,
         ];

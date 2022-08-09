@@ -143,7 +143,7 @@ impl fmt::Display for Expr {
                 write!(f, "[{}]", elements.join(", "))
             }
             Expr::IndexExpr { left, index } => {
-                write!(f, "({}[{}])", left.to_string(), index.to_string())
+                write!(f, "({}[{}])", left, index)
             }
         }
     }
