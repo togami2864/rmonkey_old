@@ -39,6 +39,7 @@ fn len(args: Vec<Object>) -> Result<Object> {
             let val = val.len().try_into().unwrap();
             Ok(Object::Integer(val))
         }
+        Object::Array { elements } => Ok(Object::Integer(elements.len().try_into()?)),
         arg => {
             return Err(MonkeyError::Custom(format!(
                 "arg to `len` not supported, got {}",

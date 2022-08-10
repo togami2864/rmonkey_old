@@ -49,4 +49,10 @@ impl From<std::num::ParseIntError> for MonkeyError {
     }
 }
 
+impl From<std::num::TryFromIntError> for MonkeyError {
+    fn from(_: std::num::TryFromIntError) -> Self {
+        MonkeyError::UnsupportedNumError
+    }
+}
+
 pub type Result<T> = std::result::Result<T, MonkeyError>;

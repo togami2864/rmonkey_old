@@ -450,7 +450,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_buildin_func() {
+    fn test_buildin_string_len() {
         let case = [
             (r#"len("")"#, "0"),
             (r#"len("four")"#, "4"),
@@ -458,6 +458,30 @@ mod tests {
             (r#"len(1)"#, "arg to `len` not supported, got INTEGER"),
             (
                 r#"len("one", "two")"#,
+                "wrong number of arguments. got=2, want=1",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            match e.eval(program) {
+                Ok(r) => assert_eq!(r.to_string(), *expected),
+                Err(e) => assert_eq!(e.to_string(), *expected),
+            }
+        }
+    }
+
+    #[test]
+    fn test_buildin_array_len() {
+        let case = [
+            (r#"len([])"#, "0"),
+            (r#"len([1,2,3,4])"#, "4"),
+            (r#"len(["1","2","3","4"])"#, "4"),
+            (r#"len([1,"2",3,"4"])"#, "4"),
+            (
+                r#"len(["one"], ["two"])"#,
                 "wrong number of arguments. got=2, want=1",
             ),
         ];
