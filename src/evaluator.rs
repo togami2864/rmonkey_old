@@ -323,8 +323,8 @@ mod tests {
     #[test]
     fn test_string() {
         let case = [
-            (r#""foobar""#, r#"foobar"#),
-            (r#""Hello" + " " + "World""#, r#"Hello World"#),
+            (r#""foobar""#, r#""foobar""#),
+            (r#""Hello" + " " + "World""#, r#""Hello World""#),
         ];
         for (input, expected) in case.iter() {
             let mut e = Evaluator::new();
@@ -483,6 +483,105 @@ mod tests {
             (
                 r#"len(["one"], ["two"])"#,
                 "wrong number of arguments. got=2, want=1",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            match e.eval(program) {
+                Ok(r) => assert_eq!(r.to_string(), *expected),
+                Err(e) => assert_eq!(e.to_string(), *expected),
+            }
+        }
+    }
+
+    #[test]
+    fn test_buildin_array_first() {
+        let case = [
+            (r#"first([])"#, "this array is empty"),
+            (r#"first([1,2,3,4])"#, "1"),
+            (r#"first(["1","2","3","4"])"#, r#""1""#),
+            (
+                r#"first(["one"], ["two"])"#,
+                "wrong number of arguments. got=2, want=1",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            match e.eval(program) {
+                Ok(r) => assert_eq!(r.to_string(), *expected),
+                Err(e) => assert_eq!(e.to_string(), *expected),
+            }
+        }
+    }
+
+    #[test]
+    fn test_buildin_array_last() {
+        let case = [
+            (r#"last([])"#, "this array is empty"),
+            (r#"last([1,2,3,4])"#, "4"),
+            (r#"last(["1","2","3","4"])"#, r#""4""#),
+            (
+                r#"last(["one"], ["two"])"#,
+                "wrong number of arguments. got=2, want=1",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            match e.eval(program) {
+                Ok(r) => assert_eq!(r.to_string(), *expected),
+                Err(e) => assert_eq!(e.to_string(), *expected),
+            }
+        }
+    }
+
+    #[test]
+    fn test_buildin_array_rest() {
+        let case = [
+            (r#"rest([])"#, "this array is empty"),
+            (r#"rest([1,2,3,4])"#, "[2, 3, 4]"),
+            (r#"rest(["1","2","3","4"])"#, r#"["2", "3", "4"]"#),
+            (
+                r#"rest(["one"], ["two"])"#,
+                "wrong number of arguments. got=2, want=1",
+            ),
+        ];
+        for (input, expected) in case.iter() {
+            let mut e = Evaluator::new();
+            let l = Lexer::new(input);
+            let mut p = Parser::new(l);
+            let program = p.parse_program().unwrap();
+            match e.eval(program) {
+                Ok(r) => assert_eq!(r.to_string(), *expected),
+                Err(e) => assert_eq!(e.to_string(), *expected),
+            }
+        }
+    }
+
+    #[test]
+    fn test_buildin_array_push() {
+        let case = [
+            (r#"push([], 0)"#, "[0]"),
+            (r#"push([1,2,3,4], 5)"#, "[1, 2, 3, 4, 5]"),
+            (
+                r#"push(["1","2","3","4"], "5")"#,
+                r#"["1", "2", "3", "4", "5"]"#,
+            ),
+            (
+                r#"push(["one"], ["two"], ["three"])"#,
+                "wrong number of arguments. got=3, want=2",
+            ),
+            (
+                r#"push("one", "two")"#,
+                "arg to `push` not supported, got STRING",
             ),
         ];
         for (input, expected) in case.iter() {
