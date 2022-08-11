@@ -18,8 +18,8 @@ pub enum Token {
     Semicolon, // ;
     LParen,    // (
     RParen,    // )
-    LBrace,    //{
-    RBrace,    //}
+    LBrace,    // {
+    RBrace,    // }
     LBracket,  // [
     RBracket,  // ]
     Bang,      // !

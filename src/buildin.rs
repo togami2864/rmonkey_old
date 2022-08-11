@@ -22,6 +22,7 @@ pub const BUILDIN: &[BuildIn] = &[
     buildin!(last),
     buildin!(rest),
     buildin!(push),
+    buildin!(puts),
 ];
 
 pub fn lookup(name: &str) -> Option<Object> {
@@ -164,4 +165,11 @@ fn push(args: Vec<Object>) -> Result<Object> {
             )))
         }
     }
+}
+
+fn puts(args: Vec<Object>) -> Result<Object> {
+    for a in args.iter() {
+        println!("{}", a);
+    }
+    Ok(Object::Null)
 }

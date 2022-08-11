@@ -92,7 +92,7 @@ impl<'a> Parser<'a> {
         while !self.cur_token_is(Token::RBrace) && !self.cur_token_is(Token::Eof) {
             match self.parse_stmt() {
                 Ok(stmt) => stmts.push(stmt),
-                Err(_) => todo!(),
+                Err(e) => return Err(MonkeyError::Custom(e.to_string())),
             }
             self.next_token();
         }
@@ -120,7 +120,7 @@ impl<'a> Parser<'a> {
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_func()?,
             Token::LBracket => self.parse_array_literal()?,
-            _ => todo!(),
+            e => return Err(MonkeyError::Custom(format!("{:?}", e))),
         };
         while !self.cur_token_is(Token::Semicolon) && precedence < self.peek_precedence() {
             self.next_token();

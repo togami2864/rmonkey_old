@@ -437,6 +437,24 @@ mod tests {
             ("let double = fn(x) { x * 2; }; double(5);", "10"),
             ("let add = fn(x, y){ x + y;}; add(5, 5);", "10"),
             ("let add = fn(x, y){ x + y;}; add(5 + 5, add(5, 5));", "20"),
+            // (
+            //     "let fibonacci = fn(x) {
+            //         if (x == 0) {
+            //             0;
+            //         }
+            //         else {
+            //             if (x == 1) { 1 }
+            //             else {fibonacci(x - 1) + fibonacci(x - 2); }
+            //         }
+            //     };
+            //     let foo = fibonacci(2);
+            //     ",
+            //     "2",
+            // ),
+            // (
+            //     "let add = fn(x){ let inner = fn(y){ if(y == 0){y}; inner(y - 1)};}; add(5);",
+            //     "2",
+            // ),
             // FIXME: parser
             // ("fn(x) { x }(5)", "5"),
         ];
@@ -595,4 +613,38 @@ mod tests {
             }
         }
     }
+
+    // TODO: fix parser
+    // #[test]
+    // fn test_map() {
+    //     let case = [(
+    //         r#"
+    //         let map = fn(array, f) {
+    //             let iter = fn(arr, accumulated) {
+    //                 if(len(arr) == 0){
+    //                     accumulated
+    //                 } else {
+    //                     iter(rest(arr), push(accumulated, f(first(arr))))
+    //                 }
+    //             };
+
+    //             iter(array, []);
+    //         };
+
+    //         let double = fn(x){ return x * 2 };
+    //         map([1, 2, 3, 4], double);
+    //         "#,
+    //         "[2, 4, 6, 8]",
+    //     )];
+    //     for (input, expected) in case.iter() {
+    //         let mut e = Evaluator::new();
+    //         let l = Lexer::new(input);
+    //         let mut p = Parser::new(l);
+    //         let program = p.parse_program().unwrap();
+    //         match e.eval(program) {
+    //             Ok(r) => assert_eq!(r.to_string(), *expected),
+    //             Err(e) => assert_eq!(e.to_string(), *expected),
+    //         }
+    //     }
+    // }
 }
