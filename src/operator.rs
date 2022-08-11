@@ -12,7 +12,7 @@ pub enum Precedence {
     Index,
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Prefix {
     Minus,
     Bang,
@@ -27,7 +27,7 @@ impl fmt::Display for Prefix {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub enum Infix {
     Eq,
     NotEq,

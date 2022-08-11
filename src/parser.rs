@@ -119,6 +119,7 @@ impl<'a> Parser<'a> {
             Token::LParen => self.parse_group_expression()?,
             Token::If => self.parse_if_expression()?,
             Token::Function => self.parse_func()?,
+            Token::LBrace => self.parse_hash_literal()?,
             Token::LBracket => self.parse_array_literal()?,
             e => return Err(MonkeyError::Custom(format!("{:?}", e))),
         };
@@ -268,6 +269,27 @@ impl<'a> Parser<'a> {
     pub fn parse_array_literal(&mut self) -> Result<Expr> {
         let elements = self.parse_call_args(Token::RBracket)?;
         Ok(Expr::ArrayLiteral { elements })
+    }
+
+    pub fn parse_hash_literal(&mut self) -> Result<Expr> {
+        let mut pairs: Vec<(Expr, Expr)> = Vec::new();
+        while !self.peek_token_is(Token::RBrace) {
+            self.next_token();
+            let key = self.parse_expression(Precedence::Lowest)?;
+            if !self.expect_peek(Token::Colon)? {
+                todo!()
+            };
+            self.next_token();
+            let value = self.parse_expression(Precedence::Lowest)?;
+            pairs.push((key, value));
+            if !self.peek_token_is(Token::RBrace) && !self.expect_peek(Token::Comma)? {
+                todo!()
+            }
+        }
+        if !self.expect_peek(Token::RBrace)? {
+            todo!()
+        }
+        Ok(Expr::HashLiteral { pairs })
     }
 
     fn cur_token_is(&self, t: Token) -> bool {
@@ -530,6 +552,26 @@ return "10"
     fn test_call_expr() {
         let input = r#"add(1, 2 * 3, 4 + 5);"#;
         let expected = vec!["add(1, (2 * 3), (4 + 5))"];
+        let l = Lexer::new(input);
+        let mut p = Parser::new(l);
+        let program = p.parse_program().unwrap();
+        assert_eq!(program.stmts.len(), expected.len());
+        for (i, p) in program.stmts.iter().enumerate() {
+            assert_eq!(p.to_string(), expected[i]);
+        }
+    }
+
+    #[test]
+    fn test_hash_literal() {
+        let input = r#"{"one": 1, "two": 2, "three": 3};
+        {};
+        {"one": 0 + 1, "two": 10 - 8, "three": 15 / 5};
+        "#;
+        let expected = vec![
+            r#"{"one": 1, "two": 2, "three": 3}"#,
+            "{}",
+            r#"{"one": (0 + 1), "two": (10 - 8), "three": (15 / 5)}"#,
+        ];
         let l = Lexer::new(input);
         let mut p = Parser::new(l);
         let program = p.parse_program().unwrap();

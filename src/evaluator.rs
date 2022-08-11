@@ -153,6 +153,7 @@ impl Evaluator {
                     )),
                 }
             }
+            Expr::HashLiteral { pairs } => todo!(),
         }
     }
 
