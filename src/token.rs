@@ -15,6 +15,7 @@ pub enum Token {
     Gt,        // <
     Lt,        // >
     Comma,     // ,
+    Colon,     // :
     Semicolon, // ;
     LParen,    // (
     RParen,    // )

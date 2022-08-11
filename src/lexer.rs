@@ -42,6 +42,7 @@ impl<'a> Lexer<'a> {
                     Token::Assign
                 }
             }
+            ':' => Token::Colon,
             ';' => Token::Semicolon,
             ',' => Token::Comma,
             '(' => Token::LParen,
@@ -142,7 +143,7 @@ mod test {
 
     #[test]
     fn test_next_token() {
-        let input = "=+(){},!-/*5;";
+        let input = "=+(){},!-/*5:;";
         let expected = vec![
             Token::Assign,
             Token::Plus,
@@ -156,6 +157,7 @@ mod test {
             Token::Slash,
             Token::Asterisk,
             Token::Int(5),
+            Token::Colon,
             Token::Semicolon,
             Token::Eof,
         ];
@@ -289,6 +291,19 @@ mod test {
             Token::Int(0),
             Token::RBracket,
             Token::Semicolon,
+        ];
+        assert_tokens(input, expected);
+    }
+
+    #[test]
+    fn test_hash() {
+        let input = r#"{"foo": "bar"}"#;
+        let expected = vec![
+            Token::LBrace,
+            Token::String("foo".to_string()),
+            Token::Colon,
+            Token::String("bar".to_string()),
+            Token::RBrace,
         ];
         assert_tokens(input, expected);
     }
