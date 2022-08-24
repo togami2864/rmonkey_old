@@ -1,0 +1,2 @@
+let isMonkeyFastNow = true;
+isMonkeyFastNow;
