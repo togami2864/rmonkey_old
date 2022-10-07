@@ -18,7 +18,7 @@ pub enum Object {
         body: Stmt,
         env: Environment,
     },
-    BuildIn(fn(Vec<Object>) -> Result<Object>),
+    BuiltIn(fn(Vec<Object>) -> Result<Object>),
     Array {
         elements: Vec<Object>,
     },
@@ -44,7 +44,7 @@ impl fmt::Display for Object {
                     body
                 )
             }
-            Object::BuildIn(_) => todo!(),
+            Object::BuiltIn(_) => todo!(),
             Object::Array { elements } => {
                 write!(
                     f,
@@ -69,7 +69,7 @@ impl Object {
             Object::Null => "NULL".to_string(),
             Object::ReturnValue(_) => todo!(),
             Object::FunctionLiteral { .. } => "FunctionLiteral".to_string(),
-            Object::BuildIn(_) => "BUILDIN".to_string(),
+            Object::BuiltIn(_) => "BUILTIN".to_string(),
             Object::Array { .. } => "ARRAY".to_string(),
         }
     }

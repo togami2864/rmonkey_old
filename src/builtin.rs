@@ -1,34 +1,34 @@
 use crate::error::{MonkeyError, Result};
 use crate::object::Object;
 
-macro_rules! buildin {
+macro_rules! builtin {
     ($name:ident) => {
-        BuildIn {
+        BuiltIn {
             name: stringify!($name),
-            buildin: Object::BuildIn($name),
+            builtin: Object::BuiltIn($name),
         }
     };
 }
 
 #[derive(Debug)]
-pub struct BuildIn {
+pub struct BuiltIn {
     pub name: &'static str,
-    pub buildin: Object,
+    pub builtin: Object,
 }
 
-pub const BUILDIN: &[BuildIn] = &[
-    buildin!(len),
-    buildin!(first),
-    buildin!(last),
-    buildin!(rest),
-    buildin!(push),
-    buildin!(puts),
+pub const BUILTIN: &[BuiltIn] = &[
+    builtin!(len),
+    builtin!(first),
+    builtin!(last),
+    builtin!(rest),
+    builtin!(push),
+    builtin!(puts),
 ];
 
 pub fn lookup(name: &str) -> Option<Object> {
-    for func in BUILDIN {
+    for func in BUILTIN {
         if func.name == name {
-            return Some(func.buildin.clone());
+            return Some(func.builtin.clone());
         }
     }
     None

@@ -2,7 +2,7 @@ use std::{cell::RefCell, rc::Rc};
 
 use crate::{
     ast::{self, Expr},
-    buildin::lookup,
+    builtin::lookup,
     environment::Environment,
     error::{MonkeyError, Result},
     object::Object,
@@ -121,7 +121,7 @@ impl Evaluator {
                 if let ast::Expr::Ident(func) = &**function {
                     match lookup(func) {
                         Some(func) => match func {
-                            Object::BuildIn(f) => f(args),
+                            Object::BuiltIn(f) => f(args),
                             _ => todo!(),
                         },
                         None => {
@@ -469,7 +469,7 @@ mod tests {
         }
     }
     #[test]
-    fn test_buildin_string_len() {
+    fn test_builtin_string_len() {
         let case = [
             (r#"len("")"#, "0"),
             (r#"len("four")"#, "4"),
@@ -493,7 +493,7 @@ mod tests {
     }
 
     #[test]
-    fn test_buildin_array_len() {
+    fn test_builtin_array_len() {
         let case = [
             (r#"len([])"#, "0"),
             (r#"len([1,2,3,4])"#, "4"),
@@ -517,7 +517,7 @@ mod tests {
     }
 
     #[test]
-    fn test_buildin_array_first() {
+    fn test_builtin_array_first() {
         let case = [
             (r#"first([])"#, "this array is empty"),
             (r#"first([1,2,3,4])"#, "1"),
@@ -540,7 +540,7 @@ mod tests {
     }
 
     #[test]
-    fn test_buildin_array_last() {
+    fn test_builtin_array_last() {
         let case = [
             (r#"last([])"#, "this array is empty"),
             (r#"last([1,2,3,4])"#, "4"),
@@ -563,7 +563,7 @@ mod tests {
     }
 
     #[test]
-    fn test_buildin_array_rest() {
+    fn test_builtin_array_rest() {
         let case = [
             (r#"rest([])"#, "this array is empty"),
             (r#"rest([1,2,3,4])"#, "[2, 3, 4]"),
@@ -586,7 +586,7 @@ mod tests {
     }
 
     #[test]
-    fn test_buildin_array_push() {
+    fn test_builtin_array_push() {
         let case = [
             (r#"push([], 0)"#, "[0]"),
             (r#"push([1,2,3,4], 5)"#, "[1, 2, 3, 4, 5]"),
