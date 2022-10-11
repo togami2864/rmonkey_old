@@ -5,7 +5,7 @@ use crate::{
     token::Token,
 };
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug)]
 pub enum MonkeyError {
     Custom(String),
     UnsupportedNumError,

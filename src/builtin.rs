@@ -47,12 +47,10 @@ fn len(args: Vec<Object>) -> Result<Object> {
             Ok(Object::Integer(val))
         }
         Object::Array { elements } => Ok(Object::Integer(elements.len().try_into()?)),
-        arg => {
-            return Err(MonkeyError::Custom(format!(
-                "arg to `len` not supported, got {}",
-                arg.obj_type()
-            )))
-        }
+        arg => Err(MonkeyError::Custom(format!(
+            "arg to `len` not supported, got {}",
+            arg.obj_type()
+        ))),
     }
 }
 
@@ -70,20 +68,16 @@ fn first(args: Vec<Object>) -> Result<Object> {
             }
             match elements.get(0) {
                 Some(obj) => Ok(obj.clone()),
-                None => {
-                    return Err(MonkeyError::Custom(format!(
-                        "wrong number of arguments. got={}, want=1",
-                        args.len()
-                    )));
-                }
+                None => Err(MonkeyError::Custom(format!(
+                    "wrong number of arguments. got={}, want=1",
+                    args.len()
+                ))),
             }
         }
-        arg => {
-            return Err(MonkeyError::Custom(format!(
-                "arg to `first` not supported, got {}",
-                arg.obj_type()
-            )))
-        }
+        arg => Err(MonkeyError::Custom(format!(
+            "arg to `first` not supported, got {}",
+            arg.obj_type()
+        ))),
     }
 }
 
@@ -102,20 +96,16 @@ fn last(args: Vec<Object>) -> Result<Object> {
             let last_index = elements.len() - 1;
             match elements.get(last_index) {
                 Some(obj) => Ok(obj.clone()),
-                None => {
-                    return Err(MonkeyError::Custom(format!(
-                        "wrong number of arguments. got={}, want=1",
-                        args.len()
-                    )));
-                }
+                None => Err(MonkeyError::Custom(format!(
+                    "wrong number of arguments. got={}, want=1",
+                    args.len()
+                ))),
             }
         }
-        arg => {
-            return Err(MonkeyError::Custom(format!(
-                "arg to `last` not supported, got {}",
-                arg.obj_type()
-            )))
-        }
+        arg => Err(MonkeyError::Custom(format!(
+            "arg to `last` not supported, got {}",
+            arg.obj_type()
+        ))),
     }
 }
 
@@ -134,12 +124,10 @@ fn rest(args: Vec<Object>) -> Result<Object> {
             let elements: Vec<Object> = elements.clone().drain(1..).collect();
             Ok(Object::Array { elements })
         }
-        arg => {
-            return Err(MonkeyError::Custom(format!(
-                "arg to `last` not supported, got {}",
-                arg.obj_type()
-            )))
-        }
+        arg => Err(MonkeyError::Custom(format!(
+            "arg to `last` not supported, got {}",
+            arg.obj_type()
+        ))),
     }
 }
 
@@ -158,12 +146,10 @@ fn push(args: Vec<Object>) -> Result<Object> {
             new_ele.insert(len, args[1].clone());
             Ok(Object::Array { elements: new_ele })
         }
-        arg => {
-            return Err(MonkeyError::Custom(format!(
-                "arg to `push` not supported, got {}",
-                arg.obj_type()
-            )))
-        }
+        arg => Err(MonkeyError::Custom(format!(
+            "arg to `push` not supported, got {}",
+            arg.obj_type()
+        ))),
     }
 }
 
